@@ -22,3 +22,18 @@ backend/outputs/*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Backend virtual environment (if located inside backend)
+backend/venv/
+
+# Generated OCR and speech files
+backend/uploads/
+backend/*.mp3
+backend/ocr_output.txt
+
+# Temporary test files (optional)
+backend/test_kannada.jpg
+
+# Generated OCR files
+backend/ocr_output.txt
+backend/test_kannada.jpg
