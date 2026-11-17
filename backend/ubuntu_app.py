@@ -11,10 +11,9 @@ app.register_blueprint(translation_bp)
 @app.route("/")
 def home():
     return jsonify({
-        "message": "Lipi Lens Ubuntu Translation API is running!",
+        "message": "Lipi Lens Translation API is running!",
         "service": "Kannada to English Translation"
     })
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=False)
-
+    app.run(host="0.0.0.0", port=5002, debug=False)

@@ -7,13 +7,12 @@ import {
   Languages,
   Sparkles,
   MessageSquareText,
-  Wand2,
   FileText
 } from "lucide-react";
 import { useDocument } from "../context/DocumentContext";
 
-export default function ExtractedText({ isExtracting, onSimplifyClick }) {
-  const { extractedText, setExtractedText, showToast } = useDocument();
+export default function ExtractedText({ isExtracting }) {
+  const { extractedText, setExtractedText, setTranslatedText, showToast } = useDocument();
   const [copied, setCopied] = useState(false);
   const navigate = useNavigate();
 
@@ -31,6 +30,7 @@ export default function ExtractedText({ isExtracting, onSimplifyClick }) {
 
   const handleClear = () => {
     setExtractedText("");
+    setTranslatedText("");
     showToast("ಪಠ್ಯವನ್ನು ತೆರವುಗೊಳಿಸಲಾಗಿದೆ (Cleared)", "info");
   };
 
@@ -73,7 +73,10 @@ export default function ExtractedText({ isExtracting, onSimplifyClick }) {
       <textarea
         className="form-textarea kannada-text"
         value={extractedText}
-        onChange={(e) => setExtractedText(e.target.value)}
+        onChange={(e) => {
+          setExtractedText(e.target.value);
+          setTranslatedText("");
+        }}
         placeholder={
           isExtracting
             ? "ಕನ್ನಡ ದಾಖಲೆಯಿಂದ ಅಕ್ಷರಗಳನ್ನು ಓದಲಾಗುತ್ತಿದೆ, ದಯವಿಟ್ಟು ನಿರೀಕ್ಷಿಸಿ... (Extracting OCR text...)"
@@ -102,24 +105,6 @@ export default function ExtractedText({ isExtracting, onSimplifyClick }) {
         >
           <Languages size={15} />
           <span>Translate (ಅನುವಾದ)</span>
-        </button>
-
-        <button
-          onClick={() => {
-            if (!extractedText) {
-              showToast("ದಯವಿಟ್ಟು ಮೊದಲು ಪಠ್ಯವನ್ನು ಒದಗಿಸಿ", "warning");
-              return;
-            }
-            if (onSimplifyClick) {
-              onSimplifyClick();
-            } else {
-              navigate("/document");
-            }
-          }}
-          className="btn btn-secondary btn-sm"
-        >
-          <Wand2 size={15} style={{ color: "var(--color-primary)" }} />
-          <span>Simplify Kannada</span>
         </button>
 
         <button

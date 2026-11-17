@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   ArrowRightLeft,
   Copy,
@@ -20,8 +20,11 @@ export default function Translation() {
   const [inputText, setInputText] = useState(extractedText || "");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const translationInFlight = useRef(false);
 
   const handleSwapLanguages = () => {
+    if (loading) return;
+
     setSourceLang(targetLang);
     setTargetLang(sourceLang);
     // Swap text values
@@ -32,11 +35,19 @@ export default function Translation() {
   };
 
   const handleTranslate = async () => {
+    if (translationInFlight.current) return;
+
     if (!inputText || !inputText.trim()) {
       showToast("ದಯವಿಟ್ಟು ಭಾಷಾಂತರಿಸಲು ಪಠ್ಯವನ್ನು ನಮೂದಿಸಿ", "warning");
       return;
     }
 
+    if (sourceLang !== "kn" || targetLang !== "en") {
+      showToast("ಪ್ರಸ್ತುತ ಕನ್ನಡದಿಂದ ಇಂಗ್ಲಿಷ್‌ಗೆ ಮಾತ್ರ ಅನುವಾದ ಲಭ್ಯವಿದೆ", "warning");
+      return;
+    }
+
+    translationInFlight.current = true;
     setLoading(true);
     try {
       const result = await translateText(inputText, sourceLang, targetLang);
@@ -50,6 +61,7 @@ export default function Translation() {
       console.error(err);
       showToast("ದೋಷ ಕಂಡುಬಂದಿದೆ", "error");
     } finally {
+      translationInFlight.current = false;
       setLoading(false);
     }
   };
@@ -85,6 +97,7 @@ export default function Translation() {
 
         <button
           onClick={handleSwapLanguages}
+          disabled={loading}
           className="swap-lang-btn"
           title="Swap Languages (ಭಾಷೆ ಅದಲು-ಬದಲು)"
           aria-label="Swap translation directions"
@@ -120,7 +133,7 @@ export default function Translation() {
               )}
               <button
                 onClick={handleClearInput}
-                disabled={!inputText}
+                disabled={!inputText || loading}
                 className="btn btn-secondary btn-sm"
               >
                 <Trash2 size={13} />
@@ -132,7 +145,11 @@ export default function Translation() {
           <textarea
             className={`form-textarea ${sourceLang === "kn" ? "kannada-text" : ""}`}
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            disabled={loading}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              setTranslatedText("");
+            }}
             placeholder={
               sourceLang === "kn"
                 ? "ಇಲ್ಲಿ ಕನ್ನಡ ಪಠ್ಯವನ್ನು ನಮೂದಿಸಿ ಅಥವಾ ದಾಖಲೆ ಕಾರ್ಯಕ್ಷೇತ್ರದಿಂದ ಸ್ವಯಂಚಾಲಿತವಾಗಿ ಲೋಡ್ ಆಗುತ್ತದೆ..."

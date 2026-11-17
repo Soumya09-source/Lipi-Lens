@@ -9,6 +9,7 @@ ocr_bp = Blueprint("ocr", __name__)
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 @ocr_bp.route("/api/ocr", methods=["POST"])
 def perform_ocr():
     if "image" not in request.files:
@@ -19,13 +20,19 @@ def perform_ocr():
 
     file = request.files["image"]
 
-    if file.filename == "":
+    if not file.filename:
         return jsonify({
             "success": False,
             "error": "No file selected"
         }), 400
 
     filename = secure_filename(file.filename)
+    if not filename:
+        return jsonify({
+            "success": False,
+            "error": "Invalid file name"
+        }), 400
+
     unique_filename = f"{uuid.uuid4().hex}_{filename}"
     image_path = os.path.join(UPLOAD_FOLDER, unique_filename)
 

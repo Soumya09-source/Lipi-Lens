@@ -9,9 +9,15 @@ translation_bp = Blueprint("translation", __name__)
 def translate_text():
     data = request.get_json(silent=True) or {}
 
+    if not isinstance(data, dict):
+        return jsonify({
+            "success": False,
+            "error": "A JSON object with kannada_text is required"
+        }), 400
+
     kannada_text = data.get("kannada_text", "")
 
-    if not kannada_text.strip():
+    if not isinstance(kannada_text, str) or not kannada_text.strip():
         return jsonify({
             "success": False,
             "error": "Kannada text is required"

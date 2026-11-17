@@ -13,7 +13,7 @@ app.register_blueprint(ocr_bp)
 @app.route("/")
 def home():
     return jsonify({
-        "message": "Lipi Lens Windows OCR API is running!",
+        "message": "Lipi Lens OCR API is running!",
         "service": "Kannada OCR"
     })
 

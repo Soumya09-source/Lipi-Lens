@@ -323,93 +323,84 @@ const generateSmartSummaryMock = (text) => {
   return { ...kn, kn, en };
 };
 
+const OCR_API_URL = import.meta.env.VITE_OCR_API_URL || "http://127.0.0.1:5001/api";
+const TRANSLATION_API_URL = import.meta.env.VITE_TRANSLATION_API_URL || "http://127.0.0.1:5002/api";
+
 /**
- * OCR extraction API: extracts Kannada text from uploaded file
- * Endpoint: POST /ocr/extract
+ * OCR extraction API: extracts Kannada text from an uploaded image or PDF.
+ * Endpoint: POST /ocr
  */
 export const extractOCR = async (file, onUploadProgress) => {
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("image", file);
 
   try {
-    const response = await apiClient.post("/ocr/extract", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+    const response = await axios.post(`${OCR_API_URL}/ocr`, formData, {
+      timeout: 120000,
       onUploadProgress,
     });
+    const data = response.data;
+
+    if (!data.success) {
+      return {
+        success: false,
+        error: data.error || "OCR extraction failed"
+      };
+    }
+
     return {
       success: true,
-      data: response.data,
-      text: response.data.text || response.data.extracted_text || response.data.content || "",
-      isDemo: false
+      data,
+      text: data.kannada_text || ""
     };
   } catch (error) {
-    console.warn("Backend /ocr/extract unavailable. Providing realistic OCR demo result.", error.message);
-    
-    // Check if filename indicates a sample or fallback
     return {
-      success: true,
-      isDemo: true,
-      demoNote: "Preview Mode: Backend API offline at " + API_BASE_URL,
-      text: `ಕರ್ನಾಟಕ ಸರ್ಕಾರ - ಕೃಷಿ ಇಲಾಖೆ
-ಸುತ್ತೋಲೆ ಸಂಖ್ಯೆ: ಕೃಇ/ಯೋ/೨೦೨೪/೪೫೨
-ದಿನಾಂಕ: ೧೫ ಅಕ್ಟೋಬರ್ ೨೦೨೪
-
-ವಿಷಯ: ೨೦೨೪-೨೫ನೇ ಸಾಲಿನ ಮುಂಗಾರು ಬೆಳೆ ಹಾನಿ ಪರಿಹಾರ ಮತ್ತು 'ಕೃಷಿ ಭಾಗ್ಯ' ಯೋಜನೆ ಅನುಷ್ಠಾನ ಕುರಿತು.
-
-ರಾಜ್ಯದ ಎಲ್ಲಾ ಜಿಲ್ಲೆಗಳ ಜಂಟಿ ಕೃಷಿ ನಿರ್ದೇಶಕರು ಹಾಗೂ ಸಹಾಯಕ ಕೃಷಿ ನಿರ್ದೇಶಕರಿಗೆ ಈ ಮೂಲಕ ಸೂಚಿಸುವುದೇನೆಂದರೆ, ಇತ್ತೀಚಿನ ಅತಿಯಾದ ಮಳೆಯಿಂದಾಗಿ ಹಾನಿಗೊಳಗಾದ ರೈತರ ಬೆಳೆ ಸಮೀಕ್ಷೆಯನ್ನು ನವೆಂಬರ್ ೧೦ ರೊಳಗೆ ಪೂರ್ಣಗೊಳಿಸಬೇಕು. ಅರ್ಹ ರೈತರ ಖಾತೆಗೆ ನೇರ ನಗದು ವರ್ಗಾವಣೆ (DBT) ಮೂಲಕ ₹೧೨,೫೦೦ ಪ್ರತಿ ಹೆಕ್ಟೇರ್‌ಗೆ ಪರಿಹಾರ ಜಮೆ ಮಾಡಲಾಗುವುದು.`
+      success: false,
+      error: error.response?.data?.error || error.message || "OCR service is unavailable"
     };
   }
 };
 
 /**
- * Translation API: Kannada to English or English to Kannada
- * Endpoint: POST /translation/translate
+ * Translation API: Kannada to English
+ * Endpoint: POST /translate
  */
 export const translateText = async (text, sourceLang = "kn", targetLang = "en") => {
   if (!text || !text.trim()) {
     return { success: false, error: "Text cannot be empty" };
   }
 
-  try {
-    const response = await apiClient.post("/translation/translate", {
-      text,
-      source: sourceLang,
-      target: targetLang,
-      source_language: sourceLang,
-      target_language: targetLang
-    });
-
-    const translated = response.data.translated_text || response.data.translation || response.data.text || "";
+  if (sourceLang !== "kn" || targetLang !== "en") {
     return {
-      success: true,
-      data: response.data,
-      translatedText: translated,
-      isDemo: false
+      success: false,
+      error: "The translation service currently supports Kannada to English only."
     };
-  } catch (error) {
-    console.warn("Backend /translation/translate unavailable. Using client-side demo translator.", error.message);
+  }
 
-    // Realistic translation demo response
-    let demoTranslation = "";
-    if (sourceLang === "kn" && targetLang === "en") {
-      if (text.includes("ಕೃಷಿ ಇಲಾಖೆ") || text.includes("ಸುತ್ತೋಲೆ")) {
-        demoTranslation = "Government of Karnataka - Department of Agriculture\nCircular No: DOA/PLAN/2024/452\nDate: 15 October 2024\n\nSubject: Regarding 2024-25 Kharif crop damage compensation and 'Krishi Bhagya' scheme implementation.\n\nAll Joint Directors of Agriculture and Assistant Directors across state districts are instructed to complete the crop survey of rain-affected farmers by November 10. Direct Benefit Transfer (DBT) of ₹12,500 per hectare will be credited to eligible farmers.";
-      } else if (text.includes("ಹುಬ್ಬಳ್ಳಿ") || text.includes("ಬಿದ್ದೈತಿ")) {
-        demoTranslation = "Brother, it has gotten very cold in Hubballi! I went to their home and they invited me saying 'Please come in, have some tea'. The family was having an argument, so I advised them to stay joyful. In the farm, the sorghum crop has flourished well and we plan to irrigate it tomorrow.";
-      } else {
-        demoTranslation = `[Translated to English]: "${text.slice(0, 150)}..."\n\nAn intelligent translation powered by Lipi Lens Kannada Neural AI.`;
-      }
-    } else {
-      demoTranslation = `[ಕನ್ನಡಕ್ಕೆ ಅನುವಾದಿಸಲಾಗಿದೆ]: "${text.slice(0, 150)}..."\n\nಲಿಪಿ ಲೆನ್ಸ್ ಕೃತಕ ಬುದ್ಧಿಮತ್ತೆ ಆಧಾರಿತ ನಿಖರ ಕನ್ನಡ ಭಾಷಾಂತರ.`;
+  try {
+    const response = await axios.post(`${TRANSLATION_API_URL}/translate`, {
+      kannada_text: text
+    }, {
+      timeout: 180000
+    });
+    const data = response.data;
+
+    if (!data.success) {
+      return {
+        success: false,
+        error: data.error || "Translation failed"
+      };
     }
 
     return {
       success: true,
-      isDemo: true,
-      demoNote: "Preview Mode: Backend API offline at " + API_BASE_URL,
-      translatedText: demoTranslation
+      data,
+      translatedText: data.english_text || ""
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || "Translation service is unavailable"
     };
   }
 };

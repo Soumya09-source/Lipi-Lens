@@ -1,0 +1,11 @@
+Flask
+Flask-Cors
+IndicTransToolkit
+numpy
+opencv-python-headless
+PyMuPDF
+pytesseract
+requests
+sentencepiece
+torch
+transformers>=4.37,<5

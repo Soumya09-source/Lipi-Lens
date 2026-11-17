@@ -8,13 +8,11 @@ import {
 import DashboardLayout from "../components/DashboardLayout";
 import ImageUpload from "../components/ImageUpload";
 import ExtractedText from "../components/ExtractedText";
-import SimplifyPanel from "../components/SimplifyPanel";
 import { useDocument } from "../context/DocumentContext";
 
 export default function DocumentPage() {
   const { documentName, extractedText } = useDocument();
   const [isExtracting, setIsExtracting] = useState(false);
-  const [showSimplifyPanel, setShowSimplifyPanel] = useState(false);
 
   return (
     <DashboardLayout
@@ -70,17 +68,9 @@ export default function DocumentPage() {
             )}
           </div>
 
-          <ExtractedText
-            isExtracting={isExtracting}
-            onSimplifyClick={() => setShowSimplifyPanel(true)}
-          />
+          <ExtractedText isExtracting={isExtracting} />
         </div>
       </div>
-
-      {/* Expandable Simplify Kannada Panel */}
-      {showSimplifyPanel && (
-        <SimplifyPanel onClose={() => setShowSimplifyPanel(false)} />
-      )}
     </DashboardLayout>
   );
 }

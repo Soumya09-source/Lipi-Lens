@@ -2,7 +2,7 @@
 from services.ocr_service import extract_kannada_text
 
 # Test image
-image_path = "test_kannada.jpg"
+image_path = "test_kannada.png"
 
 print("\n===================================")
 print("       LIPI LENS - KANNADA OCR")

@@ -15,7 +15,7 @@ import {
   Check
 } from "lucide-react";
 import { useDocument, SAMPLE_DOCUMENTS } from "../context/DocumentContext";
-import { extractOCR } from "../services/api";
+import { extractOCR, translateText } from "../services/api";
 
 export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtracting }) {
   const {
@@ -24,6 +24,7 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
     filePreview,
     setFilePreview,
     setExtractedText,
+    setTranslatedText,
     setDocumentName,
     loadSampleDocument,
     showToast
@@ -34,6 +35,7 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isTranslating, setIsTranslating] = useState(false);
 
   // Camera states
   const [isStreaming, setIsStreaming] = useState(false);
@@ -47,6 +49,7 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
   const fileInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const processingRef = useRef(false);
 
   const supportedTypes = ["image/jpeg", "image/png", "image/jpg", "application/pdf"];
 
@@ -245,7 +248,7 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
 
   // General File Handling Workflow
   const handleFileProcess = async (file) => {
-    if (!file) return;
+    if (!file || processingRef.current) return;
 
     if (!supportedTypes.includes(file.type) && !file.name.match(/\.(jpg|jpeg|png|pdf)$/i)) {
       setErrorMessage("ದಯವಿಟ್ಟು JPG, PNG ಅಥವಾ PDF ಕಡತಗಳನ್ನು ಮಾತ್ರ ಆಯ್ಕೆಮಾಡಿ (Only JPG, PNG or PDF files are supported).");
@@ -253,7 +256,10 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
       return;
     }
 
+    processingRef.current = true;
     setErrorMessage("");
+    setExtractedText("");
+    setTranslatedText("");
     setUploadedFile(file);
     setDocumentName(file.name);
 
@@ -272,20 +278,9 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
 
   const triggerOCR = async (file) => {
     setIsExtracting(true);
-    setUploadProgress(15);
+    setUploadProgress(0);
 
     try {
-      // Simulate progressive upload feedback
-      const progressTimer = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 85) {
-            clearInterval(progressTimer);
-            return 85;
-          }
-          return prev + 15;
-        });
-      }, 150);
-
       const result = await extractOCR(file, (progressEvent) => {
         if (progressEvent.total) {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
@@ -293,28 +288,43 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
         }
       });
 
-      clearInterval(progressTimer);
-      setUploadProgress(100);
-
-      if (result.success && result.text) {
-        setExtractedText(result.text);
-        if (onExtractSuccess) onExtractSuccess(result.text);
-
-        if (result.isDemo) {
-          showToast("ಕನ್ನಡ ಪಠ್ಯವನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಗುರುತಿಸಲಾಗಿದೆ (Preview Mode)", "info");
-        } else {
-          showToast("ಕನ್ನಡ OCR ಯಶಸ್ವಿಯಾಗಿ ಪೂರ್ಣಗೊಂಡಿದೆ!", "success");
-        }
-      } else {
+      if (!result.success) {
         setErrorMessage(result.error || "ಪಠ್ಯ ಹೊರತೆಗೆಯುವಿಕೆ ವಿಫಲವಾಗಿದೆ");
-        showToast("OCR ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿ ದೋಷ ಕಂಡುಬಂದಿದೆ", "error");
+        showToast(result.error || "OCR ಪ್ರಕ್ರಿಯೆಯಲ್ಲಿ ದೋಷ ಕಂಡುಬಂದಿದೆ", "error");
+        return;
+      }
+
+      if (!result.text.trim()) {
+        const message = "ಚಿತ್ರದಲ್ಲಿ ಕನ್ನಡ ಪಠ್ಯವನ್ನು ಗುರುತಿಸಲಾಗಲಿಲ್ಲ";
+        setErrorMessage(message);
+        showToast(message, "warning");
+        return;
+      }
+
+      setUploadProgress(100);
+      setExtractedText(result.text);
+      if (onExtractSuccess) onExtractSuccess(result.text);
+
+      setIsExtracting(false);
+      setIsTranslating(true);
+      const translation = await translateText(result.text, "kn", "en");
+      if (translation.success && translation.translatedText) {
+        setTranslatedText(translation.translatedText);
+        showToast("ಕನ್ನಡ OCR ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಅನುವಾದ ಯಶಸ್ವಿಯಾಗಿದೆ!", "success");
+      } else {
+        setTranslatedText("");
+        const message = `OCR ಯಶಸ್ವಿಯಾಗಿದೆ; ಅನುವಾದ ವಿಫಲವಾಗಿದೆ: ${translation.error || "ಅನುವಾದ ಲಭ್ಯವಿಲ್ಲ"}`;
+        setErrorMessage(message);
+        showToast(message, "error");
       }
     } catch (err) {
       console.error("OCR extraction failed:", err);
       setErrorMessage("ದಾಖಲೆಯನ್ನು ಪ್ರಕ್ರಿಯೆಗೊಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ");
       showToast("OCR ಪ್ರಕ್ರಿಯೆ ವಿಫಲವಾಗಿದೆ", "error");
     } finally {
+      setIsTranslating(false);
       setIsExtracting(false);
+      processingRef.current = false;
       setTimeout(() => setUploadProgress(0), 1000);
     }
   };
@@ -344,6 +354,8 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
   };
 
   const handleRemoveFile = () => {
+    if (processingRef.current) return;
+
     setUploadedFile(null);
     setFilePreview(null);
     setUploadProgress(0);
@@ -631,6 +643,11 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
                 <Sparkles size={12} className="spinning" />
                 <span>Extracting OCR...</span>
               </span>
+            ) : isTranslating ? (
+              <span className="badge badge-gold">
+                <Sparkles size={12} className="spinning" />
+                <span>Translating...</span>
+              </span>
             ) : (
               <span className="badge badge-success">
                 <CheckCircle size={13} />
@@ -639,6 +656,7 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
             )}
             <button
               onClick={handleRemoveFile}
+              disabled={isExtracting || isTranslating}
               className="btn-icon-only btn-secondary"
               title="Remove file"
             >
@@ -693,10 +711,12 @@ export default function ImageUpload({ onExtractSuccess, isExtracting, setIsExtra
               key={sample.id}
               type="button"
               onClick={() => {
+                if (processingRef.current) return;
                 stopCamera();
                 setUploadMode("file");
                 loadSampleDocument(sample.id);
               }}
+              disabled={isExtracting || isTranslating}
               className="btn btn-secondary btn-sm"
               style={{ textAlign: "left", justifyContent: "flex-start", fontSize: 12, padding: "8px 10px" }}
               title={sample.title}
