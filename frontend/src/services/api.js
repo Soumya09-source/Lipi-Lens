@@ -2,6 +2,8 @@ import axios from "axios";
 
 // Read API URL from environment, defaulting to standard backend port
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const UBUNTU_API_URL = import.meta.env.VITE_UBUNTU_API_URL || "http://127.0.0.1:5000/api";
+const SPEECH_API_URL = import.meta.env.VITE_SPEECH_API_URL || "http://127.0.0.1:5002/api";
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -323,7 +325,7 @@ const generateSmartSummaryMock = (text) => {
 };
 
 const OCR_API_URL = import.meta.env.VITE_OCR_API_URL || "http://127.0.0.1:5001/api";
-const TRANSLATION_API_URL = import.meta.env.VITE_TRANSLATION_API_URL || "http://127.0.0.1:5002/api";
+const TRANSLATION_API_URL = import.meta.env.VITE_TRANSLATION_API_URL || UBUNTU_API_URL;
 
 /**
  * OCR extraction API: extracts Kannada text from an uploaded image or PDF.
@@ -406,22 +408,30 @@ export const translateText = async (text, sourceLang = "kn", targetLang = "en") 
 
 /**
  * Speech generation API: generates speech audio for text
- * Endpoint: POST /speech/generate
+ * Endpoint: POST /api/speech
  */
 export const generateSpeech = async (text, language = "kn") => {
+  if (language !== "kn") {
+    return {
+      success: true,
+      isDemo: true,
+      fallbackToWebSpeech: true,
+      demoNote: "Mithi TTS supports Kannada only"
+    };
+  }
+
   try {
-    const response = await apiClient.post("/speech/generate", {
-      text,
-      language
+    const response = await axios.post(`${SPEECH_API_URL}/speech`, { text }, {
+      responseType: "blob",
+      timeout: 120000
     });
     return {
       success: true,
-      audioUrl: response.data.audio_url || response.data.url,
-      audioBase64: response.data.audio_base64,
+      audioUrl: URL.createObjectURL(response.data),
       isDemo: false
     };
   } catch (error) {
-    console.warn("Backend /speech/generate unavailable. Utilizing client Web Speech API fallback.", error.message);
+    console.warn("Backend /api/speech unavailable. Utilizing client Web Speech API fallback.", error.message);
     return {
       success: true,
       isDemo: true,
@@ -463,7 +473,7 @@ export const simplifyText = async (text) => {
 
 /**
  * Document Summary API: generates structured summary of document
- * Endpoint: POST /summary/generate
+ * Endpoint: POST /api/summary
  */
 export const generateSummary = async (text) => {
   if (!text || !text.trim()) {
@@ -471,14 +481,19 @@ export const generateSummary = async (text) => {
   }
 
   try {
-    const response = await apiClient.post("/summary/generate", { text });
+    const response = await axios.post(`${UBUNTU_API_URL}/summary`, {
+      kannada_text: text,
+      english_text: ""
+    }, {
+      timeout: 120000
+    });
     return {
       success: true,
       summary: response.data.summary || response.data,
       isDemo: false
     };
   } catch (error) {
-    console.warn("Backend /summary/generate unavailable. Generating structured demo summary.", error.message);
+    console.warn("Backend /api/summary unavailable. Generating structured demo summary.", error.message);
     const mockSummary = generateSmartSummaryMock(text);
     return {
       success: true,
@@ -489,9 +504,49 @@ export const generateSummary = async (text) => {
   }
 };
 
+export const generateVocabulary = async (kannadaText, englishText = "") => {
+  if (!kannadaText || !kannadaText.trim()) {
+    return { success: false, error: "Kannada document text is required" };
+  }
+
+  try {
+    const response = await axios.post(`${UBUNTU_API_URL}/vocabulary`, {
+      kannada_text: kannadaText,
+      english_text: englishText
+    }, {
+      timeout: 120000
+    });
+    const data = response.data;
+
+    if (!data?.success) {
+      return {
+        success: false,
+        error: data?.error || "Vocabulary generation failed"
+      };
+    }
+
+    if (!Array.isArray(data.vocabulary)) {
+      return {
+        success: false,
+        error: "Vocabulary API returned an invalid response"
+      };
+    }
+
+    return {
+      success: true,
+      vocabulary: data.vocabulary
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.error || error.message || "Vocabulary service is unavailable"
+    };
+  }
+};
+
 /**
  * Chatbot API: asks a question about the document
- * Endpoint: POST /chat/ask
+ * Endpoint: POST /api/chat
  */
 export const askChat = async (query, contextText = "", history = []) => {
   if (!query || !query.trim()) {
@@ -499,10 +554,9 @@ export const askChat = async (query, contextText = "", history = []) => {
   }
 
   try {
-    const response = await apiClient.post("/chat/ask", {
-      query,
+    const response = await axios.post(`${UBUNTU_API_URL}/chat`, {
+      document_text: contextText,
       question: query,
-      context: contextText,
       history
     });
     return {
@@ -511,7 +565,7 @@ export const askChat = async (query, contextText = "", history = []) => {
       isDemo: false
     };
   } catch (error) {
-    console.warn("Backend /chat/ask unavailable. Generating intelligent demo response.", error.message);
+    console.warn("Backend /api/chat unavailable. Generating intelligent demo response.", error.message);
 
     let answer = "";
     const qLower = query.toLowerCase();

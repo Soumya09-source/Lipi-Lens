@@ -43,7 +43,7 @@ source .venv/bin/activate
 python ubuntu_app.py
 ```
 
-The Kannada-to-English translation API listens on `http://127.0.0.1:5002` and
+The Kannada-to-English translation API listens on `http://127.0.0.1:5000` and
 accepts JSON requests at `/api/translate`. The IndicTrans2 model is downloaded
 when the first translation request arrives. Its Hugging Face model repository
 is gated: request access to `ai4bharat/indictrans2-indic-en-dist-200M` and
@@ -57,6 +57,22 @@ read -s -p "Hugging Face token: " HF_TOKEN; echo; export HF_TOKEN
 The OCR API can run without this model access; translation requests return an
 error until access is granted and authentication is configured.
 
+The same Ubuntu API also provides `/api/summary`, `/api/vocabulary`, and
+`/api/chat`. Set `GEMINI_API_KEY` in the backend process environment to use
+these Gemini-powered endpoints.
+
+Mithi text-to-speech is served by its separate Flask application:
+
+```bash
+cd backend
+source .venv/bin/activate
+python mithi_app.py
+```
+
+It listens on port `5002`, exposes `POST /api/speech`, and requires the Mithi
+model code and weights at the configured model location. It can run alongside
+`ubuntu_app.py`, which listens on port `5000`.
+
 ### Start the frontend
 
 ```bash
@@ -66,8 +82,9 @@ npm run dev
 ```
 
 By default, the frontend connects to the local API ports above. Set
-`VITE_OCR_API_URL` or `VITE_TRANSLATION_API_URL` if the APIs run at different
-base URLs; each value should include the `/api` path.
+`VITE_OCR_API_URL`, `VITE_TRANSLATION_API_URL`, `VITE_UBUNTU_API_URL`, or
+`VITE_SPEECH_API_URL` if an API runs at a different base URL; each value should
+include the `/api` path.
 
 ### Regional Kannada analysis
 
@@ -95,7 +112,7 @@ unmatched text is not classified as Standard Kannada.
 
 Matched expressions retain dataset-provided meanings. When a complete matched
 expression has no meaning in the dataset, the regional API uses the local
-translation endpoint at `http://127.0.0.1:5002/api/translate` for English and
+translation endpoint at `http://127.0.0.1:5000/api/translate` for English and
 the configured Gemini service for a Standard Kannada rendering. Override the
 translation endpoint with `REGIONAL_TRANSLATION_API_URL`; generated and
 dataset-provided values carry separate provenance fields in the API response.
@@ -108,7 +125,7 @@ are reported as unavailable.
 curl -F "image=@/path/to/kannada-document.jpg" http://127.0.0.1:5001/api/ocr
 curl -H "Content-Type: application/json" \
   -d '{"kannada_text":"ನಮಸ್ಕಾರ"}' \
-  http://127.0.0.1:5002/api/translate
+  http://127.0.0.1:5000/api/translate
 curl -H "Content-Type: application/json" \
   -d '{"text":"ನಮಸ್ಕಾರ"}' \
   http://localhost:8001/api/regional/analyse

@@ -12,7 +12,7 @@ LOGGER = logging.getLogger(__name__)
 TranslationSource = Literal["dataset", "AI-generated", "unavailable"]
 TRANSLATION_API_URL = os.getenv(
     "REGIONAL_TRANSLATION_API_URL",
-    "http://127.0.0.1:5002/api/translate",
+    "http://127.0.0.1:5000/api/translate",
 )
 TRANSLATION_TIMEOUT_SECONDS = 12
 
