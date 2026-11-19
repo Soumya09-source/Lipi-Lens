@@ -1,0 +1,280 @@
+[
+  {
+    "id": "mysuru_s001",
+    "text": "ಮಗಳ ಕಣ್ಣುಗ ತುಂಬಿಕೊಂಡು ಮಂಚಕ್ಕೆ ಬಂದು",
+    "english_gloss": "Filling his eyes with his daughter, he came to the cot",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_003"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 30,
+    "extraction_confidence": "high",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s002",
+    "text": "ಇನ್ನು ಮಕ್ಕಮರಿ ಸಾಕು ಎಂದಿರುವಾಗ ಅರಿವುಗ ಬಾರದೆ ಹುಟ್ಟಿಬುಟ್ಟಿದ್ದನು",
+    "english_gloss": "When no more children were wanted, he was born unawares",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_013",
+      "mysuru_004",
+      "mysuru_007"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 30,
+    "extraction_confidence": "high",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s003",
+    "text": "ಸೋಮಪ್ಪರ ಮೂಗಿನ ಮ್ಯಾಲ ಹುಬ್ಬಿನ ಕೆಳಗ",
+    "english_gloss": "On Somappa's nose, below the brow",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_001",
+      "mysuru_002"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 30,
+    "extraction_confidence": "high",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s004",
+    "text": "ಯಾಕಾರೂ ಹುಟ್ಟಿದನೋ",
+    "english_gloss": "Why on earth was he born",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_010"
+    ],
+    "label_confidence": "low",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 30,
+    "extraction_confidence": "high",
+    "notes": "Mostly shared colloquial; weak marker alone."
+  },
+  {
+    "id": "mysuru_s005",
+    "text": "ಅವನು ಬೆಳೆದಂತೆಲ್ಲಾ ಅವೂ ಬೆಳೀತಾ",
+    "english_gloss": "As he grew, they grew too",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_009"
+    ],
+    "label_confidence": "low",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 30,
+    "extraction_confidence": "high",
+    "notes": "Contains only shared colloquial features."
+  },
+  {
+    "id": "mysuru_s006",
+    "text": "ಆ ಮೂರು ಬೊಗಸ ನೀರ ಕುಡ್ದಾಳು",
+    "english_gloss": "She drank those three handfuls of water",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_017",
+      "mysuru_016",
+      "mysuru_015"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "high",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s007",
+    "text": "ಆ ಸೆರಗೀನ ತುದಿಯಾ ನೀರಿಗದ್ದಿದಳೂ",
+    "english_gloss": "She dipped the end of her sari in water",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_018",
+      "mysuru_019"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "high",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s008",
+    "text": "ಅಲ್ಲುಗ ಭೂಮತಾಯ ತನ್ನೇಡು ರೆಕ್ಕೆಗಳೂ",
+    "english_gloss": "There, Mother Earth's two wings",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_005",
+      "mysuru_022",
+      "mysuru_021"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "medium",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s009",
+    "text": "ಅಕ್ಕಮಾದೇವಮ್ಮ ಯಾಡರು ಕೂತ ಜಾಗವೂ ಅಲ್ಲುಗ ನೆರುಳಾಯ್ತು",
+    "english_gloss": "The place where they sat became shade",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_031",
+      "mysuru_005",
+      "mysuru_006"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "medium",
+    "notes": "Character name spelling should be checked against the printed book."
+  },
+  {
+    "id": "mysuru_s010",
+    "text": "ನಿಚ್ಚಾಲೂ ಟೀ ಕಡುಬು",
+    "english_gloss": "Tea and kadubu every day",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_026"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "medium",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s011",
+    "text": "ಯಾಡನು ದಿನದಿನ್ನ ಬೆಳೀತಾ",
+    "english_gloss": "Yaada, growing day by day",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_027",
+      "mysuru_009"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "high",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s012",
+    "text": "ಎಡ ಮೂಗಿನ ವೊಳ್ಳಲಿ ಬರೋ ಗೊಣ್ಣನ",
+    "english_gloss": "Snot coming from the left nostril",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_029",
+      "mysuru_030"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "medium",
+    "notes": ""
+  },
+  {
+    "id": "mysuru_s013",
+    "text": "ಬೀಡಿಬಿಂಕಿಪೊಟ್ಟಣ ಇಟ್ಗೊಂಡು",
+    "english_gloss": "Carrying a beedi-and-matchbox packet",
+    "region": "mysuru",
+    "locality": "Mysuru district, rural (inferred from author's home area, Nanjangud taluk; not stated in text)",
+    "text_form": "verse_line",
+    "dialect_markers": [
+      "mysuru_024"
+    ],
+    "label_confidence": "medium",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 60,
+    "extraction_confidence": "high",
+    "notes": ""
+  },
+  {
+    "id": "standard_s014",
+    "text": "ಈ ಊರಿಗೆ ದೊಡ್ಡವರ ಮಗಳು ಕುಸುಮಬಾಲೆ",
+    "english_gloss": "Kusumabaale is the daughter of this village's leader",
+    "region": "standard",
+    "locality": null,
+    "text_form": "prose_sentence",
+    "dialect_markers": [],
+    "label_confidence": "low",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 20,
+    "extraction_confidence": "high",
+    "notes": "Synopsis page, standard-register narration. Provisional: label needs reviewer confirmation and should be balanced with a formal, non-novel standard source."
+  },
+  {
+    "id": "standard_s015",
+    "text": "ಇತ್ತ ಇಡೀ ಊರಿಗೆ ಊರೇ ಕಿಚ್ಚು ಹಾಯಿಸೋ ಹಬ್ಬಕ್ಕೆ ಸಿದ್ಧವಾಗುತ್ತಿದ್ದರೆ",
+    "english_gloss": "While the whole village prepared for the fire-walking festival",
+    "region": "standard",
+    "locality": null,
+    "text_form": "prose_sentence",
+    "dialect_markers": [],
+    "label_confidence": "low",
+    "verification_status": "unverified",
+    "verification_count": 0,
+    "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)",
+    "pdf_page": 20,
+    "extraction_confidence": "high",
+    "notes": "Mixed: formal narration with one colloquial form (ಹಾಯಿಸೋ). Use as an ambiguous example."
+  }
+]

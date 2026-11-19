@@ -1,0 +1,14 @@
+Flask
+Flask-Cors
+google-genai
+IndicTransToolkit
+numpy
+opencv-python-headless
+PyMuPDF
+python-dotenv
+pytesseract
+requests
+sentencepiece
+soundfile
+torch
+transformers>=4.37,<5

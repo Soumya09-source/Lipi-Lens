@@ -38,3 +38,33 @@ backend/test_kannada.jpg
 # Generated OCR files
 backend/ocr_output.txt
 backend/test_kannada.jpg
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python virtual environments
+venv/
+.venv/
+backend/venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Test images and generated files
+backend/test_kannada.png
+backend/ocr_output.txt
+backend/uploads/
+backend/outputs/*
+
+# Hugging Face cache
+.cache/
+huggingface/
+
+.venv/
+__pycache__/
+.env
+*.pyc
+*.db

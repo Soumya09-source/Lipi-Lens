@@ -1,0 +1,28 @@
+{
+  "dataset_name": "North Karnataka Kannada Regional Dataset",
+  "version": "0.1",
+  "region_label": "north_karnataka",
+  "source": {
+    "title": "ಮಾಡಿ ಮಡಿದವರು (Maadi Madidavaru)",
+    "author": "ಬಸವರಾಜ ಕಟ್ಟೀಮನಿ (Basavaraj Kattimani)",
+    "abridged_by": "ಡಾ. ಶ್ರೀನಿವಾಸ ಹಾವನೂರ (Dr. Srinivasa Havanur)",
+    "publisher": "National Book Trust, India",
+    "edition_note": "Abridged Kannada novel; source PDF supplied by user",
+    "pdf_pages": 80,
+    "text_extraction_scope": "Main narrative pages 5–78 of the supplied PDF"
+  },
+  "counts": {
+    "vocabulary_records": 32,
+    "sentence_records": 1523,
+    "paragraph_excerpt_records": 320
+  },
+  "processing_notes": [
+    "Sentence records are extracted from OCR/text extraction and retain source wording as far as extraction allows.",
+    "Paragraph records are contiguous groups of up to five extracted sentences from the same PDF page; they are not asserted to reproduce the original typographic paragraph boundaries.",
+    "Vocabulary entries are candidate dialect forms observed in dialogue, not confirmed exclusive North Karnataka vocabulary.",
+    "The narrative is set around Belagavi/Kallapur and includes region-marked dialogue; not every sentence in the novel is necessarily North Karnataka dialect.",
+    "OCR may contain errors, especially in older/scanned print. Review the source page before treating a spelling or form as verified.",
+    "All entries are initially marked unverified; do not use the whole corpus as clean dialect gold labels without manual review."
+  ],
+  "schema_note": "Sentence and paragraph files include source_page, locality, dialect_evidence/text_unit, and verification_status fields in addition to core text and region labels."
+}

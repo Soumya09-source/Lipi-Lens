@@ -1,0 +1,41 @@
+{
+  "dataset_name": "Regional Kannada Dataset — Coastal Kannada source corpus",
+  "version": "0.1.0",
+  "created_from": "User-provided DOCX: mookajjiya-kansugalu_extracted_text(2).docx",
+  "work": {
+    "title": "ಮೂಕಜ್ಜಿಯ ಕನಸುಗಳು",
+    "author": "ಡಾ. ಕೆ. ಶಿವರಾಮ ಕಾರಂತ"
+  },
+  "region_label": "coastal",
+  "region_label_basis": "The user designated this work as Coastal Kannada. The author/work is associated with Dakshina Kannada, but this does not establish that every sentence or lexical item is uniquely Coastal Kannada.",
+  "counts": {
+    "vocabulary_entries": 20,
+    "sentence_records": 3623,
+    "paragraph_records": 624
+  },
+  "files": [
+    "vocabulary/regional_words.json",
+    "sentences/regional_sentences.json",
+    "paragraphs/regional_paragraphs.json",
+    "metadata/dataset_info.json"
+  ],
+  "methodology": [
+    "Narrative text was extracted from the supplied DOCX; front matter and running page/chapter headers were excluded where identifiable.",
+    "Sentence records were segmented using sentence-final punctuation. OCR line-breaks and punctuation may cause segmentation errors.",
+    "Paragraph records preserve extracted text blocks after normalizing line breaks.",
+    "Vocabulary entries are an initial curated list of colloquial, cultural, household, and rural expressions found in the text."
+  ],
+  "quality_and_limitations": [
+    "The source DOCX is OCR-derived and contains visible OCR errors, so all records are marked unverified.",
+    "The novel is literary prose. Coastal setting/author association alone does not prove that every word or sentence is dialect-specific.",
+    "The vocabulary list is a candidate list, not a validated Coastal Kannada lexicon. Many items may be shared across Kannada varieties.",
+    "Do not treat all sentence/paragraph labels as confirmed dialect labels for model training without native-speaker review.",
+    "Page numbers are left null because the extracted DOCX pagination does not reliably map every text block to the printed book page."
+  ],
+  "recommended_next_steps": [
+    "Have a Coastal Kannada speaker review each candidate expression and mark regional_specificity.",
+    "Add locality labels such as Kundapura, Udupi, Mangaluru, Puttur only when supported by the text or a knowledgeable annotator.",
+    "Correct OCR errors against page images before using the corpus for model training.",
+    "Split source-derived literary language from explicitly dialectal dialogue when annotation evidence permits."
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "dataset_name": "Lipi Lens Regional Kannada Dataset",
+  "version": "1.0",
+  "regions": {
+    "coastal": {
+      "vocabulary": 20,
+      "sentences": 3623,
+      "paragraphs": 624
+    },
+    "north_karnataka": {
+      "vocabulary": 32,
+      "sentences": 1523,
+      "paragraphs": 320
+    },
+    "mysuru": {
+      "vocabulary": 31,
+      "sentences": 15,
+      "paragraphs": 0
+    }
+  },
+  "total_vocabulary": 83,
+  "total_sentences": 5161,
+  "total_paragraphs": 944,
+  "duplicate_expression_groups": 1,
+  "duplicate_expressions": [
+    {
+      "expression": "ಮ್ಯಾಲ",
+      "occurrences": 2,
+      "regions": [
+        "mysuru",
+        "north_karnataka"
+      ],
+      "entries": [
+        {
+          "id": "north_001_030",
+          "dataset_region": "north_karnataka",
+          "source_region": "north_karnataka",
+          "verification_status": "unverified",
+          "source": "Maadi Madidavaru (ಮಾಡಿ ಮಡಿದವರು), Basavaraj Kattimani; abridged version by Dr. Srinivasa Havanur"
+        },
+        {
+          "id": "mysuru_001",
+          "dataset_region": "mysuru",
+          "source_region": "mysuru",
+          "verification_status": "unverified",
+          "source": "Kusumabaale (ಕುಸುಮಬಾಲೆ), Devanuru Mahadeva; Kannada & Culture Dept., Govt. of Karnataka edition (PDF)"
+        }
+      ]
+    }
+  ]
+}
