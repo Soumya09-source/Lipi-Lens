@@ -190,7 +190,6 @@ const generateSmartSummaryMock = (text) => {
         "ಹೆಚ್ಚಿನ ವಿವರಣೆಗಾಗಿ 'ಪ್ರಾದೇಶಿಕ ಕನ್ನಡ (Regional Kannada)' ವಿಭಾಗದಲ್ಲಿ ವಿಶ್ಲೇಷಿಸಿ."
       ]
     };
-
     const en = {
       overview: "Text written in regional Karnataka dialect, reflecting local cultural conversations, agricultural life, and regional vernacular traditions.",
       importantPoints: [
@@ -535,105 +534,6 @@ export const askChat = async (query, contextText = "", history = []) => {
       success: true,
       isDemo: true,
       answer,
-      demoNote: "Preview Mode: Backend API offline at " + API_BASE_URL
-    };
-  }
-};
-
-/**
- * Regional Kannada Analysis API: identifies regional Kannada expressions and dialects
- * Endpoint: POST /regional/analyse
- */
-export const analyseRegionalKannada = async (text) => {
-  if (!text || !text.trim()) {
-    return { success: false, error: "Text cannot be empty" };
-  }
-
-  try {
-    const response = await apiClient.post("/regional/analyse", {
-      text,
-      kannada_text: text
-    });
-    return {
-      success: true,
-      analysis: response.data.analysis || response.data.result || response.data,
-      isDemo: false
-    };
-  } catch (error) {
-    console.warn("Backend /regional/analyse unavailable. Using client-side regional dialect intelligence engine.", error.message);
-
-    // Detect matching expressions against REGIONAL_DICTIONARY
-    const detectedExpressions = [];
-    const regionScores = {
-      "North Karnataka": 0,
-      "Coastal Karnataka": 0,
-      "Mysuru Region": 0
-    };
-
-    REGIONAL_DICTIONARY.forEach(item => {
-      if (item.pattern.test(text)) {
-        detectedExpressions.push({
-          word: item.word,
-          region: item.region,
-          regionKannada: item.regionKannada,
-          standard: item.standard,
-          englishMeaning: item.englishMeaning,
-          context: item.context,
-          alternatives: item.alternatives,
-          confidence: item.confidence
-        });
-
-        if (item.region.includes("North Karnataka")) regionScores["North Karnataka"] += 2;
-        if (item.region.includes("Coastal")) regionScores["Coastal Karnataka"] += 2;
-        if (item.region.includes("Mysuru")) regionScores["Mysuru Region"] += 2;
-      }
-    });
-
-    // Determine primary possible region
-    let primaryRegion = "Multi-Regional / Standard Kannada";
-    let primaryRegionKannada = "ಸಮಗ್ರ / ಪ್ರಮಾಣಿತ ಕನ್ನಡ";
-    let highestScore = 0;
-
-    if (regionScores["North Karnataka"] > highestScore) {
-      highestScore = regionScores["North Karnataka"];
-      primaryRegion = "Possible Region: North Karnataka (ಉತ್ತರ ಕರ್ನಾಟಕ)";
-      primaryRegionKannada = "ಉತ್ತರ ಕರ್ನಾಟಕ ಭಾಗ (ಹುಬ್ಬಳ್ಳಿ, ಧಾರವಾಡ, ಬೆಳಗಾವಿ)";
-    }
-    if (regionScores["Coastal Karnataka"] > highestScore) {
-      highestScore = regionScores["Coastal Karnataka"];
-      primaryRegion = "Possible Region: Coastal Karnataka (ಕರಾವಳಿ)";
-      primaryRegionKannada = "ಕರಾವಳಿ ಕರ್ನಾಟಕ (ಮಂಗಳೂರು, ಉಡುಪಿ)";
-    }
-    if (regionScores["Mysuru Region"] > highestScore) {
-      highestScore = regionScores["Mysuru Region"];
-      primaryRegion = "Possible Region: Mysuru Region (ಮೈಸೂರು ಭಾಗ)";
-      primaryRegionKannada = "ಹಳೆ ಮೈಸೂರು ಭಾಗ (ಮೈಸೂರು, ಮಂಡ್ಯ, ಬೆಂಗಳೂರು)";
-    }
-
-    // If no specific match was found, provide smart generic regional context
-    if (detectedExpressions.length === 0) {
-      detectedExpressions.push({
-        word: "ಪ್ರಮಾಣಿತ ಆಡುಭಾಷೆ (Standard Dialect)",
-        region: "Standard Written Kannada",
-        regionKannada: "ಪ್ರಮಾಣಿತ ಕನ್ನಡ",
-        standard: text.slice(0, 40) + "...",
-        englishMeaning: "Standard administrative or literary Kannada expression.",
-        context: "The analyzed text follows standard grammatical structures widely used across Karnataka.",
-        alternatives: ["ಉತ್ತರ ಕರ್ನಾಟಕ ಆಡುಮಾತು", "ಕರಾವಳಿ ಭಾಷಾ ಶೈಲಿ", "ಮೈಸೂರು ಕನ್ನಡ"],
-        confidence: "Possible Region: Standard Statewide Kannada (Confidence: 85%)"
-      });
-    }
-
-    return {
-      success: true,
-      isDemo: true,
-      analysis: {
-        primaryRegion,
-        primaryRegionKannada,
-        detectedExpressions,
-        totalExpressions: detectedExpressions.length,
-        summary: `ವಿಶ್ಲೇಷಣೆಯ ಪ್ರಕಾರ, ಈ ಪಠ್ಯದಲ್ಲಿ ${primaryRegionKannada} ಶೈಲಿಯ ಭಾಷಾ ಪ್ರಯೋಗಗಳು ಮತ್ತು ಪದಪುಂಜಗಳು ಗೋಚರಿಸುತ್ತವೆ.`
-      },
       demoNote: "Preview Mode: Backend API offline at " + API_BASE_URL
     };
   }

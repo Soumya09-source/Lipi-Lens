@@ -61,3 +61,9 @@ backend/outputs/*
 # Hugging Face cache
 .cache/
 huggingface/
+
+.venv/
+__pycache__/
+.env
+*.pyc
+*.db

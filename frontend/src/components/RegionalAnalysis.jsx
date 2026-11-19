@@ -1,249 +1,381 @@
 import React, { useState } from "react";
 import {
+  Check,
   Compass,
-  MapPin,
-  Sparkles,
   Copy,
-  Check
+  FileText,
+  BookOpen,
+  Loader2,
+  Sparkles,
 } from "lucide-react";
 import { useDocument } from "../context/DocumentContext";
-import { analyseRegionalKannada } from "../services/api";
+import { analyseRegionalKannada } from "../services/regionalApi";
+
+const REGION_LABELS = {
+  coastal: "Coastal Kannada (ಕರಾವಳಿ)",
+  north_karnataka: "North Karnataka Kannada (ಉತ್ತರ ಕರ್ನಾಟಕ)",
+  mysuru: "Mysuru Kannada (ಮೈಸೂರು)",
+};
+const DATASET_TYPE_LABELS = {
+  word: "Vocabulary",
+  sentence: "Sentence",
+  paragraph: "Paragraph",
+};
+
+const getRegionBadgeClass = (region = "") => {
+  if (region.includes("Coastal") || region.includes("ಕರಾವಳಿ")) return "region-coastal";
+  if (region.includes("North") || region.includes("ಉತ್ತರ")) return "region-north";
+  if (region.includes("Mysuru") || region.includes("ಮೈಸೂರು")) return "region-mysuru";
+  return "region-neutral";
+};
+
+const getCandidateRegions = (analysis) =>
+  Object.entries(analysis.regional_evidence || {})
+    .filter(([, evidence]) => evidence.matched_expressions?.length)
+    .map(([region, evidence]) => ({
+      id: region,
+      label: evidence.label || REGION_LABELS[region] || region,
+      evidence,
+    }));
+
+const getVerificationStatus = (expression) =>
+  expression.is_shared
+    ? "shared"
+    : expression.verification_status || "unknown";
+
+const VerificationBadge = ({ expression }) => {
+  const status = getVerificationStatus(expression);
+  return (
+    <span className={`regional-verification is-${status}`}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+};
 
 export default function RegionalAnalysis() {
   const { extractedText, showToast } = useDocument();
   const [inputText, setInputText] = useState(extractedText || "");
   const [loading, setLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [inputError, setInputError] = useState("");
+  const [requestError, setRequestError] = useState("");
   const [copiedIndex, setCopiedIndex] = useState(null);
 
-  const handleAnalyze = async () => {
-    if (!inputText || !inputText.trim()) {
-      showToast("ದಯವಿಟ್ಟು ವಿಶ್ಲೇಷಿಸಲು ಕನ್ನಡ ಪಠ್ಯವನ್ನು ಒದಗಿಸಿ", "warning");
+  const updateInput = (text) => {
+    setInputText(text);
+    setInputError("");
+    setRequestError("");
+    setAnalysisResult(null);
+  };
+
+  const handleAnalyze = async (event) => {
+    event.preventDefault();
+    if (loading) return;
+    if (!inputText.trim()) {
+      const message = "ದಯವಿಟ್ಟು ವಿಶ್ಲೇಷಿಸಲು ಕನ್ನಡ ಪಠ್ಯವನ್ನು ಒದಗಿಸಿ";
+      setInputError(message);
+      showToast(message, "warning");
       return;
     }
 
     setLoading(true);
+    setRequestError("");
     try {
       const response = await analyseRegionalKannada(inputText);
-      if (response.success && response.analysis) {
-        setAnalysisResult(response.analysis);
-        showToast("ಪ್ರಾದೇಶಿಕ ಭಾಷಾ ವಿಶ್ಲೇಷಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ!", "success");
-      } else {
-        showToast("ವಿಶ್ಲೇಷಣೆ ವಿಫಲವಾಗಿದೆ", "error");
+      if (!response?.success) {
+        throw new Error("Regional analysis returned an unsuccessful response.");
       }
-    } catch (err) {
-      console.error(err);
-      showToast("ದೋಷ ಕಂಡುಬಂದಿದೆ", "error");
+      setAnalysisResult(response);
+      showToast("ಪ್ರಾದೇಶಿಕ ಭಾಷಾ ವಿಶ್ಲೇಷಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ!", "success");
+    } catch (error) {
+      const message = error.message || "Regional analysis failed. Please try again.";
+      setRequestError(message);
+      showToast("ಪ್ರಾದೇಶಿಕ ವಿಶ್ಲೇಷಣೆ ವಿಫಲವಾಗಿದೆ", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSampleDialect = (sampleDialectText) => {
-    setInputText(sampleDialectText);
-    setAnalysisResult(null);
+  const handleCopyExpression = async (expression, index) => {
+    const text = [
+      `${expression.original_text || expression.expression} (${expression.region || "region not identified"})`,
+      `ಪ್ರಮಾಣಿತ ಕನ್ನಡ: ${expression.standard_kannada || "ಲಭ್ಯವಿಲ್ಲ"}`,
+      `English: ${expression.english_meaning || "Not available"}`,
+      `Verification: ${expression.verification_status || "unknown"}`,
+      `Source: ${expression.source || "Not available"}`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedIndex(index);
+      showToast("ಪ್ರಾದೇಶಿಕ ಪದದ ವಿವರವನ್ನು ನಕಲಿಸಲಾಗಿದೆ", "success");
+      window.setTimeout(() => setCopiedIndex(null), 2000);
+    } catch (error) {
+      console.error("Copy failed", error);
+      showToast("ವಿವರವನ್ನು ನಕಲಿಸಲಾಗಲಿಲ್ಲ", "error");
+    }
   };
 
-  const handleCopyExpression = async (expr, index) => {
-    const text = `${expr.word} (${expr.region})\nಪ್ರಮಾಣಿತ ರೂಪ: ${expr.standard}\nEnglish: ${expr.englishMeaning}\nಸಂದರ್ಭ: ${expr.context}`;
-    await navigator.clipboard.writeText(text);
-    setCopiedIndex(index);
-    showToast("ಪ್ರಾದೇಶಿಕ ಪದದ ವಿವರವನ್ನು ನಕಲಿಸಲಾಗಿದೆ", "success");
-    setTimeout(() => setCopiedIndex(null), 2000);
-  };
-
-  const getRegionBadgeClass = (regionName = "") => {
-    if (regionName.includes("Coastal") || regionName.includes("ಕರಾವಳಿ")) return "region-coastal";
-    if (regionName.includes("North") || regionName.includes("ಉತ್ತರ")) return "region-north";
-    return "region-mysuru";
-  };
+  const candidateRegions = analysisResult
+    ? getCandidateRegions(analysisResult)
+    : [];
+  const matchedExpressions = analysisResult?.matched_expressions || [];
 
   return (
     <div className="regional-container">
-      {/* Input & Control Card */}
-      <div className="card" style={{ marginBottom: 24 }}>
+      <form className="card regional-input-card" onSubmit={handleAnalyze}>
         <div className="card-header">
           <div className="card-title">
-            <div className="feature-icon-box" style={{ width: 36, height: 36, backgroundColor: "var(--color-gold-light)", color: "#8C6500" }}>
+            <div
+              className="feature-icon-box"
+              style={{
+                width: 36,
+                height: 36,
+                backgroundColor: "var(--color-gold-light)",
+                color: "#8C6500",
+              }}
+            >
               <Compass size={18} />
             </div>
             <span>ಪ್ರಾದೇಶಿಕ ಕನ್ನಡ ಭಾಷಾ ಬುದ್ಧಿವಂತಿಕೆ (Regional Dialect Intelligence)</span>
           </div>
-          <span className="badge badge-gold">Novelty AI Feature</span>
+          <span className="badge badge-gold">Regional Evidence Analysis</span>
         </div>
 
-        <p style={{ fontSize: 13, color: "var(--color-text-secondary)", marginBottom: 14 }}>
-          ಉತ್ತರ ಕರ್ನಾಟಕ (North Karnataka), ಕರಾವಳಿ (Coastal Karnataka), ಮತ್ತು ಹಳೆ ಮೈಸೂರು (Mysuru) ಪ್ರಾಂತ್ಯಗಳ ವಿಶಿಷ್ಟ ಆಡುನುಡಿ, ಪದಪುಂಜಗಳು ಹಾಗೂ ನುಡಿಗಟ್ಟುಗಳನ್ನು ಗುರುತಿಸಿ ಪ್ರಮಾಣಿತ ಕನ್ನಡ ಮತ್ತು ಇಂಗ್ಲಿಷ್ ಅರ್ಥವನ್ನು ನೀಡುತ್ತದೆ.
+        <p className="regional-description">
+          ಉತ್ತರ ಕರ್ನಾಟಕ, ಕರಾವಳಿ ಮತ್ತು ಮೈಸೂರು ಪ್ರಾಂತ್ಯಗಳ ಪದಪ್ರಯೋಗಗಳ ಸಾಕ್ಷ್ಯ ಹಾಗೂ
+          ಪರಿಶೀಲನಾ ಸ್ಥಿತಿಯನ್ನು ತೋರಿಸುತ್ತದೆ. ಸಾಕಷ್ಟು ಸಾಕ್ಷ್ಯವಿಲ್ಲದಿದ್ದರೆ ಫಲಿತಾಂಶವನ್ನು
+          Unknown ಎಂದು ತೋರಿಸಲಾಗುತ್ತದೆ.
         </p>
 
-        {/* Quick sample dialect buttons */}
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, alignSelf: "center", color: "var(--color-text-secondary)" }}>
-            ಪರೀಕ್ಷಿಸಿ:
-          </span>
+        <div className="regional-input-toolbar">
+          <span className="regional-toolbar-label">ಪಠ್ಯ ಮೂಲ (Text source):</span>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            onClick={() => handleSampleDialect("ಯಪ್ಪಾ, ನಮ್ಮ ಹುಬ್ಬಳ್ಳ್ಯಾಗ ಭಾಳ ಚಳಿ ಬಿದ್ದೈತಿ ನೋಡ್ರಿ! ಅಟ್ಟಿ ಮಂದಿ ಎಲ್ಲ ಕೂಡಿ ಗಮ್ಮತ್ತಿನಾಗಿರ್ರಿ ಅಂದ್ರು.")}
+            onClick={() => updateInput(extractedText)}
+            disabled={!extractedText || loading}
           >
-            ಉತ್ತರ ಕರ್ನಾಟಕ (North Dialect)
+            <FileText size={14} />
+            <span>OCR ಪಠ್ಯ ಬಳಸಿ (Use extracted text)</span>
+          </button>
+          {extractedText && (
+            <span className="regional-source-note">
+              {extractedText.length} ಅಕ್ಷರಗಳು ಲಭ್ಯವಿದೆ
+            </span>
+          )}
+        </div>
+
+        <div className="regional-samples">
+          <span className="regional-toolbar-label">ಪರೀಕ್ಷಿಸಿ (Examples):</span>
+          <button
+            type="button"
+            className="btn btn-secondary btn-sm"
+            disabled={loading}
+            onClick={() =>
+              updateInput(
+                "ಯಪ್ಪಾ, ನಮ್ಮ ಹುಬ್ಬಳ್ಳ್ಯಾಗ ಭಾಳ ಚಳಿ ಬಿದ್ದೈತಿ ನೋಡ್ರಿ! ಅಟ್ಟಿ ಮಂದಿ ಎಲ್ಲ ಕೂಡಿ ಗಮ್ಮತ್ತಿನಾಗಿರ್ರಿ ಅಂದ್ರು.",
+              )
+            }
+          >
+            ಉತ್ತರ ಕರ್ನಾಟಕ
           </button>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            onClick={() => handleSampleDialect("ನಮ್ಮ ಕುಡ್ಲದ ಊರಿನಲ್ಲಿ ಎಂಚಿತ್ತಿನ ಪೊರ್ಲು ಕಂಬಳ ನಡೀತಿದೆ ಬೊಕ್ಕ ಬಯ್ಯದ ಹೊತ್ತಿಗೆ ಕೋರಿ ರೊಟ್ಟಿ ಊಟ!")}
+            disabled={loading}
+            onClick={() =>
+              updateInput(
+                "ನಮ್ಮ ಕುಡ್ಲದ ಊರಿನಲ್ಲಿ ಎಂಚಿತ್ತಿನ ಪೊರ್ಲು ಕಂಬಳ ನಡೀತಿದೆ ಬೊಕ್ಕ ಬಯ್ಯದ ಹೊತ್ತಿಗೆ ಕೋರಿ ರೊಟ್ಟಿ ಊಟ!",
+              )
+            }
           >
-            ಕರಾವಳಿ ಕನ್ನಡ (Coastal Dialect)
+            ಕರಾವಳಿ ಕನ್ನಡ
           </button>
           <button
             type="button"
             className="btn btn-secondary btn-sm"
-            onClick={() => handleSampleDialect("ಬನ್ನಿ ಸ್ವಾಮಿ, ಉಪಚಾರ ಸ್ವೀಕರಿಸಿ ಕಣ್ರೀ. ತಿಂಡಿ ತೀರ್ಥ ಮುಗಿಸಿಕೊಂಡು ಆಮೇಲೆ ಮಾತನಾಡೋಣ ಕಣಯ್ಯ.")}
+            disabled={loading}
+            onClick={() =>
+              updateInput(
+                "ಬನ್ನಿ ಸ್ವಾಮಿ, ಉಪಚಾರ ಸ್ವೀಕರಿಸಿ ಕಣ್ರೀ. ತಿಂಡಿ ತೀರ್ಥ ಮುಗಿಸಿಕೊಂಡು ಆಮೇಲೆ ಮಾತನಾಡೋಣ ಕಣಯ್ಯ.",
+              )
+            }
           >
-            ಮೈಸೂರು ಶೈಲಿ (Mysuru Dialect)
+            ಮೈಸೂರು ಶೈಲಿ
           </button>
         </div>
 
+        <label className="regional-text-label" htmlFor="regional-analysis-text">
+          ವಿಶ್ಲೇಷಿಸಲು ಕನ್ನಡ ಪಠ್ಯ
+        </label>
         <textarea
+          id="regional-analysis-text"
           className="form-textarea kannada-text"
           value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="ವಿಶ್ಲೇಷಿಸಬೇಕಾದ ಕನ್ನಡ ಪಠ್ಯವನ್ನು ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ ಅಥವಾ ಅಂಟಿಸಿ..."
-          style={{ minHeight: 130 }}
+          onChange={(event) => updateInput(event.target.value)}
+          disabled={loading}
+          placeholder="ಕನ್ನಡ ಪಠ್ಯವನ್ನು ಇಲ್ಲಿ ಟೈಪ್ ಮಾಡಿ, ಅಂಟಿಸಿ ಅಥವಾ OCR ಪಠ್ಯವನ್ನು ಬಳಸಿ..."
+          aria-invalid={Boolean(inputError)}
+          aria-describedby={inputError ? "regional-input-error" : undefined}
+          rows={5}
         />
+        {inputError && (
+          <p id="regional-input-error" className="regional-error" role="alert">
+            {inputError}
+          </p>
+        )}
 
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
+        <div className="regional-submit-row">
           <button
-            onClick={handleAnalyze}
-            disabled={!inputText.trim() || loading}
+            type="submit"
+            disabled={loading}
             className="btn btn-primary"
           >
-            <Sparkles size={16} />
-            <span>{loading ? "ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..." : "ಪ್ರಾದೇಶಿಕತೆ ವಿಶ್ಲೇಷಿಸಿ (Analyze Dialect)"}</span>
+            {loading ? <Loader2 className="regional-spinner" size={16} /> : <Sparkles size={16} />}
+            <span>
+              {loading
+                ? "ವಿಶ್ಲೇಷಿಸಲಾಗುತ್ತಿದೆ..."
+                : "ಪ್ರಾದೇಶಿಕತೆ ವಿಶ್ಲೇಷಿಸಿ (Analyze Dialect)"}
+            </span>
           </button>
         </div>
-      </div>
+      </form>
 
-      {/* Analysis Results View */}
-      {analysisResult && (
-        <div>
-          {/* Main Detected Region Banner */}
-          <div
-            style={{
-              background: "linear-gradient(135deg, #FFFDF8 0%, #FAF1E3 100%)",
-              border: "1.5px solid var(--color-border)",
-              borderRadius: "var(--radius-lg)",
-              padding: "20px 24px",
-              marginBottom: 24,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 16
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <div
-                className="feature-icon-box"
-                style={{ width: 48, height: 48, backgroundColor: "var(--color-primary-soft)", color: "var(--color-primary)" }}
-              >
-                <MapPin size={24} />
-              </div>
-              <div>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "var(--color-primary)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  AI DIALECT ESTIMATION
-                </div>
-                <h3 style={{ fontSize: 20, fontWeight: 800, color: "var(--color-text-main)" }} className="kannada-text">
-                  {analysisResult.primaryRegion}
-                </h3>
-                <div style={{ fontSize: 13, color: "var(--color-text-secondary)", marginTop: 2 }}>
-                  {analysisResult.summary}
-                </div>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-              <span className="badge badge-gold" style={{ fontSize: 12 }}>
-                {analysisResult.detectedExpressions?.length || 0} Regional Expressions Found
-              </span>
-              <span style={{ fontSize: 11, color: "var(--color-text-muted)" }}>
-                Carefully indicated as "Possible Region"
-              </span>
-            </div>
-          </div>
-
-          {/* List of Detected Expressions */}
-          <div style={{ marginBottom: 16 }}>
-            <h4 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12, color: "var(--color-text-main)" }}>
-              ಗುರುತಿಸಲಾದ ಪ್ರಾದೇಶಿಕ ನುಡಿಗಟ್ಟುಗಳು ಮತ್ತು ಪದ ವಿವರಣೆಗಳು (Identified Expressions):
-            </h4>
-
-            {analysisResult.detectedExpressions?.map((expr, idx) => (
-              <div key={idx} className="expression-card">
-                <div className="expression-header">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span className="expression-word kannada-text">{expr.word}</span>
-                    <span className={`region-badge-pill ${getRegionBadgeClass(expr.region)}`}>
-                      {expr.region}
-                    </span>
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span className="badge badge-primary" style={{ fontSize: 11 }}>
-                      {expr.confidence}
-                    </span>
-                    <button
-                      onClick={() => handleCopyExpression(expr, idx)}
-                      className="btn-icon-only btn-secondary"
-                      title="Copy expression detail"
-                    >
-                      {copiedIndex === idx ? <Check size={14} color="#1B8354" /> : <Copy size={14} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginTop: 12 }}>
-                  <div style={{ background: "#FAF5EB", padding: "12px 14px", borderRadius: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "var(--color-primary)", marginBottom: 4 }}>
-                      ಪ್ರಮಾಣಿತ ಕನ್ನಡ ರೂಪ (Standard Kannada Equivalent):
-                    </div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "var(--color-text-main)" }} className="kannada-text">
-                      {expr.standard}
-                    </div>
-                  </div>
-
-                  <div style={{ background: "#F5F8FA", padding: "12px 14px", borderRadius: 10 }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: "#0B638A", marginBottom: 4 }}>
-                      English Meaning:
-                    </div>
-                    <div style={{ fontSize: 14, color: "var(--color-text-main)" }}>
-                      {expr.englishMeaning}
-                    </div>
-                  </div>
-                </div>
-
-                {expr.context && (
-                  <div style={{ marginTop: 12, fontSize: 13, color: "var(--color-text-secondary)" }}>
-                    <strong>ಸಂದರ್ಭ ಮತ್ತು ಬಳಕೆ (Context & Usage):</strong> {expr.context}
-                  </div>
-                )}
-
-                {expr.alternatives && expr.alternatives.length > 0 && (
-                  <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--color-text-muted)" }}>
-                      ಪ್ರಾದೇಶಿಕ ಪರ್ಯಾಯಗಳು (Alternatives):
-                    </span>
-                    {expr.alternatives.map((alt, altIdx) => (
-                      <span key={altIdx} className="badge badge-secondary kannada-text" style={{ fontSize: 12, background: "#FFF", border: "1px solid var(--color-border)" }}>
-                        {alt}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+      {requestError && (
+        <div className="regional-error regional-request-error" role="alert">
+          {requestError}
         </div>
+      )}
+
+      {analysisResult && (
+        <section className="regional-results" aria-live="polite">
+          <div className="regional-explanation">
+            <h4>ವಿಶ್ಲೇಷಣೆಯ ವಿವರಣೆ (Explanation)</h4>
+            <p>{analysisResult.explanation || "No explanation was provided."}</p>
+          </div>
+
+          <div className="regional-candidate-section">
+            <h4>ಪರಿಗಣಿಸಲಾದ ಪ್ರದೇಶಗಳು (Candidate regions)</h4>
+            {candidateRegions.length ? (
+              <div className="regional-candidate-list">
+                {candidateRegions.map(({ id, label, evidence }) => (
+                  <div className="regional-candidate" key={id}>
+                    <span className={`region-badge-pill ${getRegionBadgeClass(label)}`}>
+                      {label}
+                    </span>
+                    <span className="regional-candidate-counts">
+                      {evidence.verified_expression_count || 0} verified ·{" "}
+                      {evidence.unverified_expression_count || 0} unverified ·{" "}
+                      {evidence.shared_expression_count || 0} shared
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="regional-no-candidates">
+                No candidate region is supported by matched expressions.
+              </p>
+            )}
+          </div>
+
+          <div className="regional-expression-section">
+            <h4>
+              ಗುರುತಿಸಲಾದ ಪದಪ್ರಯೋಗಗಳು (Matched expressions)
+            </h4>
+            {matchedExpressions.length ? (
+              matchedExpressions.map((expression, index) => (
+                <article
+                  className="expression-card regional-match-card"
+                  key={`${expression.expression}-${index}`}
+                >
+                  <div className="expression-header">
+                    <div className="regional-expression-title">
+                      <span className="expression-word regional-original-expression kannada-text">
+                        {expression.original_text || expression.expression}
+                      </span>
+                      {expression.dataset_type && (
+                        <span className="regional-dataset-type">
+                          {DATASET_TYPE_LABELS[expression.dataset_type] || expression.dataset_type}
+                        </span>
+                      )}
+                      {expression.region && (
+                        <span className="region-badge-pill regional-variety-pill">
+                          {REGION_LABELS[expression.region] || expression.region}
+                        </span>
+                      )}
+                    </div>
+                    <div className="regional-expression-actions">
+                      <VerificationBadge expression={expression} />
+                      <button
+                        type="button"
+                        onClick={() => handleCopyExpression(expression, index)}
+                        className="btn-icon-only btn-secondary"
+                        title="Copy expression details"
+                        aria-label="Copy expression details"
+                      >
+                        {copiedIndex === index ? (
+                          <Check size={14} color="#1B8354" />
+                        ) : (
+                          <Copy size={14} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="regional-expression-details">
+                    <div className="regional-detail-box regional-english">
+                      <span>English meaning</span>
+                      <strong>{expression.english_meaning || "Not available"}</strong>
+                    </div>
+                  </div>
+
+                  {expression.candidate_regions?.length > 0 && (
+                    <div className="regional-expression-candidates">
+                      <span>Candidate regions:</span>
+                      {expression.candidate_regions.map((region) => (
+                        <span className="badge badge-secondary" key={region}>
+                          {REGION_LABELS[region] || region}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {(expression.source || expression.locality || expression.source_page != null) && (
+                    <section className="regional-source-card" aria-label="Source information">
+                      <BookOpen className="regional-source-icon" size={20} aria-hidden="true" />
+                      <div className="regional-source-content">
+                        <span className="regional-source-heading">Source information</span>
+                        <strong className="regional-source-title">
+                          {expression.source || "Source not available"}
+                        </strong>
+                        {expression.source_page != null && (
+                          <span className="regional-source-page">
+                            Page {expression.source_page}
+                          </span>
+                        )}
+                        {expression.locality && (
+                          <div className="regional-source-locality">
+                            <span>Locality / source-level attribution</span>
+                            <p>{expression.locality}</p>
+                          </div>
+                        )}
+                      </div>
+                    </section>
+                  )}
+                  {expression.occurrences > 1 && (
+                    <p className="regional-occurrences">
+                      Matched {expression.occurrences} times
+                    </p>
+                  )}
+                </article>
+              ))
+            ) : (
+              <p className="regional-no-candidates">
+                No dataset expressions matched this text.
+              </p>
+            )}
+          </div>
+        </section>
       )}
     </div>
   );

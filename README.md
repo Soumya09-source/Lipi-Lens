@@ -43,7 +43,7 @@ source .venv/bin/activate
 python ubuntu_app.py
 ```
 
-The Kannada-to-English translation API listens on `http://127.0.0.1:5000` and
+The Kannada-to-English translation API listens on `http://127.0.0.1:5002` and
 accepts JSON requests at `/api/translate`. The IndicTrans2 model is downloaded
 when the first translation request arrives. Its Hugging Face model repository
 is gated: request access to `ai4bharat/indictrans2-indic-en-dist-200M` and
@@ -69,11 +69,47 @@ By default, the frontend connects to the local API ports above. Set
 `VITE_OCR_API_URL` or `VITE_TRANSLATION_API_URL` if the APIs run at different
 base URLs; each value should include the `/api` path.
 
+### Regional Kannada analysis
+
+The Regional Kannada Intelligence API runs independently on port 8001:
+
+```bash
+cd regional-backend
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m uvicorn main:app --host 127.0.0.1 --port 8001
+```
+
+In `frontend/.env`, set `VITE_REGIONAL_API_URL=http://localhost:8001` and
+restart Vite after changing the value. The frontend calls
+`POST /api/regional/analyse`; the regional backend's default CORS configuration
+allows the local Vite origin at `http://localhost:5173`. If using another
+frontend origin, add it to the regional backend's comma-separated
+`CORS_ORIGINS` setting.
+
+Regional matching checks vocabulary, complete sentence, and paragraph records
+with Unicode-normalized, punctuation-insensitive matching. Responses identify
+the dataset type and source. Unverified or shared evidence remains candidate-only;
+unmatched text is not classified as Standard Kannada.
+
+Matched expressions retain dataset-provided meanings. When a complete matched
+expression has no meaning in the dataset, the regional API uses the local
+translation endpoint at `http://127.0.0.1:5002/api/translate` for English and
+the configured Gemini service for a Standard Kannada rendering. Override the
+translation endpoint with `REGIONAL_TRANSLATION_API_URL`; generated and
+dataset-provided values carry separate provenance fields in the API response.
+If a generator is unavailable or fails, the corresponding value and provenance
+are reported as unavailable.
+
 ### API smoke tests
 
 ```bash
 curl -F "image=@/path/to/kannada-document.jpg" http://127.0.0.1:5001/api/ocr
 curl -H "Content-Type: application/json" \
   -d '{"kannada_text":"ನಮಸ್ಕಾರ"}' \
-  http://127.0.0.1:5000/api/translate
+  http://127.0.0.1:5002/api/translate
+curl -H "Content-Type: application/json" \
+  -d '{"text":"ನಮಸ್ಕಾರ"}' \
+  http://localhost:8001/api/regional/analyse
 ```

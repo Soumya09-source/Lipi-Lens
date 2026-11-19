@@ -1,0 +1,61 @@
+{
+  "dataset_name": "Regional Kannada Dataset",
+  "version": "0.1.0-draft",
+  "status": "unverified draft",
+  "classes": [
+    "coastal",
+    "north_karnataka",
+    "mysuru",
+    "standard"
+  ],
+  "counts": {
+    "vocabulary": {
+      "mysuru": 31,
+      "coastal": 0,
+      "north_karnataka": 0,
+      "standard": 0
+    },
+    "sentences": {
+      "mysuru": 13,
+      "standard": 2,
+      "coastal": 0,
+      "north_karnataka": 0
+    },
+    "paragraphs": 0
+  },
+  "targets_per_class": {
+    "vocabulary": 100
+  },
+  "sources": [
+    {
+      "title": "Kusumabaale",
+      "author": "Devanuru Mahadeva",
+      "label": "mysuru",
+      "pdf_pages_used": [
+        20,
+        30,
+        60
+      ],
+      "pdf_total_pages": 172,
+      "first_published": "believed 1988; confirm",
+      "copyright": "in copyright; short fragments only, private research use"
+    }
+  ],
+  "extraction_method": "PDF uses a legacy (Nudi-type) font encoding, so the text layer is unusable and no Kannada OCR was available. Kannada was read from page images by the assistant and transcribed manually. Transcription errors are possible.",
+  "limitations": [
+    "All entries are unverified (verification_count 0). No native-speaker check has been done.",
+    "Locality is inferred from the author's background, not stated in the text.",
+    "Regional_specificity is judged from one text and is not evidence of exclusivity.",
+    "Paragraphs file is empty: the source is verse-like and in copyright, so no long excerpts were reproduced.",
+    "Standard-class sentences from p.20 are provisional and come from a novel's synopsis, not a formal source.",
+    "Only 3 of 172 pages were used; this is a pilot batch."
+  ],
+  "schema_additions": [
+    "pdf_page",
+    "extraction_confidence",
+    "notes",
+    "label_confidence",
+    "dialect_markers",
+    "text_form"
+  ]
+}
