@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ArrowRightLeft,
   Copy,
@@ -8,7 +8,6 @@ import {
   FileText
 } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
-import SpeechPlayer from "../components/SpeechPlayer";
 import { useDocument } from "../context/DocumentContext";
 import { translateText } from "../services/api";
 
@@ -20,7 +19,18 @@ export default function Translation() {
   const [inputText, setInputText] = useState(extractedText || "");
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const translationInFlight = useRef(false);
+  const lastExtractedText = useRef(extractedText);
+
+  useEffect(() => {
+    if (lastExtractedText.current === extractedText) return;
+
+    lastExtractedText.current = extractedText;
+    setInputText(extractedText || "");
+    setTranslatedText("");
+    setErrorMessage("");
+  }, [extractedText, setTranslatedText]);
 
   const handleSwapLanguages = () => {
     if (loading) return;
@@ -38,28 +48,38 @@ export default function Translation() {
     if (translationInFlight.current) return;
 
     if (!inputText || !inputText.trim()) {
-      showToast("ದಯವಿಟ್ಟು ಭಾಷಾಂತರಿಸಲು ಪಠ್ಯವನ್ನು ನಮೂದಿಸಿ", "warning");
+      const message = "ದಯವಿಟ್ಟು ಮೊದಲು ದಾಖಲೆ ಪಠ್ಯವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ ಅಥವಾ ಒದಗಿಸಿ";
+      setErrorMessage(message);
+      showToast(message, "warning");
       return;
     }
 
     if (sourceLang !== "kn" || targetLang !== "en") {
-      showToast("ಪ್ರಸ್ತುತ ಕನ್ನಡದಿಂದ ಇಂಗ್ಲಿಷ್‌ಗೆ ಮಾತ್ರ ಅನುವಾದ ಲಭ್ಯವಿದೆ", "warning");
+      const message = "ಪ್ರಸ್ತುತ ಕನ್ನಡದಿಂದ ಇಂಗ್ಲಿಷ್‌ಗೆ ಮಾತ್ರ ಅನುವಾದ ಲಭ್ಯವಿದೆ";
+      setErrorMessage(message);
+      showToast(message, "warning");
       return;
     }
 
     translationInFlight.current = true;
     setLoading(true);
+    setErrorMessage("");
+    setTranslatedText("");
     try {
       const result = await translateText(inputText, sourceLang, targetLang);
-      if (result.success && result.translatedText) {
+      if (result.success && result.translatedText?.trim()) {
         setTranslatedText(result.translatedText);
         showToast("ಯಶಸ್ವಿಯಾಗಿ ಅನುವಾದಿಸಲಾಗಿದೆ!", "success");
       } else {
-        showToast(result.error || "ಅನುವಾದ ಪ್ರಕ್ರಿಯೆ ವಿಫಲವಾಗಿದೆ", "error");
+        const message = result.error || "Translation returned no text.";
+        setErrorMessage(message);
+        showToast(message, "error");
       }
     } catch (err) {
       console.error(err);
-      showToast("ದೋಷ ಕಂಡುಬಂದಿದೆ", "error");
+      const message = err.message || "Translation service is unavailable.";
+      setErrorMessage(message);
+      showToast(message, "error");
     } finally {
       translationInFlight.current = false;
       setLoading(false);
@@ -80,6 +100,8 @@ export default function Translation() {
 
   const handleClearInput = () => {
     setInputText("");
+    setTranslatedText("");
+    setErrorMessage("");
     showToast("ಇನ್‌ಪುಟ್ ತೆರವುಗೊಳಿಸಲಾಗಿದೆ", "info");
   };
 
@@ -109,6 +131,22 @@ export default function Translation() {
           <span>{targetLang === "en" ? "English (ಇಂಗ್ಲಿಷ್)" : "ಕನ್ನಡ (Kannada)"}</span>
         </div>
       </div>
+
+      {errorMessage && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="card"
+          style={{
+            border: "1px solid var(--color-danger)",
+            color: "var(--color-danger)",
+            marginBottom: 20,
+            padding: "14px 18px"
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
 
       {/* Side-by-Side Translation Workspace */}
       <div className="translation-container">
@@ -149,6 +187,7 @@ export default function Translation() {
             onChange={(e) => {
               setInputText(e.target.value);
               setTranslatedText("");
+              setErrorMessage("");
             }}
             placeholder={
               sourceLang === "kn"
@@ -182,9 +221,6 @@ export default function Translation() {
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
-              {/* Strictly Speech Output Playback (NO Microphone/Input) */}
-              <SpeechPlayer text={translatedText} language={targetLang} />
-
               <button
                 onClick={handleCopyOutput}
                 disabled={!translatedText}

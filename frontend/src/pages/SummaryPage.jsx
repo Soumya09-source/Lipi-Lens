@@ -6,8 +6,15 @@ import { useDocument } from "../context/DocumentContext";
 import { generateSummary } from "../services/api";
 
 export default function SummaryPage() {
-  const { setSummary, extractedText, documentName, showToast } = useDocument();
+  const {
+    setSummary,
+    extractedText,
+    translatedText,
+    documentName,
+    showToast
+  } = useDocument();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleGenerateSummary = async () => {
     if (!extractedText || !extractedText.trim()) {
@@ -16,17 +23,22 @@ export default function SummaryPage() {
     }
 
     setIsGenerating(true);
+    setErrorMessage("");
     try {
-      const response = await generateSummary(extractedText);
+      const response = await generateSummary(extractedText, translatedText || "");
       if (response.success && response.summary) {
         setSummary(response.summary);
         showToast("ದಾಖಲೆಯ ಬುದ್ಧಿವಂತ ಸಾರಾಂಶ ಯಶಸ್ವಿಯಾಗಿ ರಚಿತವಾಗಿದೆ!", "success");
       } else {
-        showToast("ಸಾರಾಂಶ ರಚನೆ ವಿಫಲವಾಗಿದೆ", "error");
+        const message = response.error || "Summary generation failed.";
+        setErrorMessage(message);
+        showToast(message, "error");
       }
     } catch (err) {
       console.error(err);
-      showToast("ದೋಷ ಸಂಭವಿಸಿದೆ", "error");
+      const message = err.message || "The summary service is unavailable. Please try again.";
+      setErrorMessage(message);
+      showToast(message, "error");
     } finally {
       setIsGenerating(false);
     }
@@ -54,6 +66,22 @@ export default function SummaryPage() {
           </span>
         </div>
       </div>
+
+      {errorMessage && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="card"
+          style={{
+            border: "1px solid var(--color-danger)",
+            color: "var(--color-danger)",
+            marginBottom: 20,
+            padding: "14px 18px",
+          }}
+        >
+          {errorMessage}
+        </div>
+      )}
 
       <SummaryComponent
         isGenerating={isGenerating}

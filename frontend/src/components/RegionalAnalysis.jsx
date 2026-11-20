@@ -30,8 +30,8 @@ const getRegionBadgeClass = (region = "") => {
 };
 
 const getCandidateRegions = (analysis) =>
-  Object.entries(analysis.regional_evidence || {})
-    .filter(([, evidence]) => evidence.matched_expressions?.length)
+  Object.entries(analysis?.regional_evidence || {})
+    .filter(([, evidence]) => evidence?.matched_expressions?.length)
     .map(([region, evidence]) => ({
       id: region,
       label: evidence.label || REGION_LABELS[region] || region,
@@ -53,19 +53,47 @@ const VerificationBadge = ({ expression }) => {
 };
 
 export default function RegionalAnalysis() {
-  const { extractedText, showToast } = useDocument();
-  const [inputText, setInputText] = useState(extractedText || "");
+  const { extractedText, documentName, showToast } = useDocument();
+  const [inputOverride, setInputOverride] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState(null);
-  const [inputError, setInputError] = useState("");
-  const [requestError, setRequestError] = useState("");
+  const [analysisState, setAnalysisState] = useState(null);
+  const [inputErrorState, setInputErrorState] = useState(null);
+  const [requestErrorState, setRequestErrorState] = useState(null);
   const [copiedIndex, setCopiedIndex] = useState(null);
 
+  const inputText =
+    inputOverride &&
+    inputOverride.documentName === documentName &&
+    inputOverride.documentText === extractedText
+      ? inputOverride.text
+      : extractedText || "";
+  const analysisResult =
+    analysisState &&
+    analysisState.documentName === documentName &&
+    analysisState.documentText === extractedText &&
+    analysisState.inputText === inputText
+      ? analysisState.result
+      : null;
+  const inputError =
+    inputErrorState &&
+    inputErrorState.documentName === documentName &&
+    inputErrorState.documentText === extractedText &&
+    inputErrorState.inputText === inputText
+      ? inputErrorState.message
+      : "";
+  const requestError =
+    requestErrorState &&
+    requestErrorState.documentName === documentName &&
+    requestErrorState.documentText === extractedText &&
+    requestErrorState.inputText === inputText
+      ? requestErrorState.message
+      : "";
+
   const updateInput = (text) => {
-    setInputText(text);
-    setInputError("");
-    setRequestError("");
-    setAnalysisResult(null);
+    setInputOverride({ documentName, documentText: extractedText, text });
+    setInputErrorState(null);
+    setRequestErrorState(null);
+    setAnalysisState(null);
   };
 
   const handleAnalyze = async (event) => {
@@ -73,23 +101,40 @@ export default function RegionalAnalysis() {
     if (loading) return;
     if (!inputText.trim()) {
       const message = "ದಯವಿಟ್ಟು ವಿಶ್ಲೇಷಿಸಲು ಕನ್ನಡ ಪಠ್ಯವನ್ನು ಒದಗಿಸಿ";
-      setInputError(message);
+      setInputErrorState({
+        documentName,
+        documentText: extractedText,
+        inputText,
+        message,
+      });
       showToast(message, "warning");
       return;
     }
 
+    const sourceText = inputText.trim();
     setLoading(true);
-    setRequestError("");
+    setRequestErrorState(null);
+    setAnalysisState(null);
     try {
-      const response = await analyseRegionalKannada(inputText);
+      const response = await analyseRegionalKannada(sourceText);
       if (!response?.success) {
         throw new Error("Regional analysis returned an unsuccessful response.");
       }
-      setAnalysisResult(response);
+      setAnalysisState({
+        documentName,
+        documentText: extractedText,
+        inputText,
+        result: response,
+      });
       showToast("ಪ್ರಾದೇಶಿಕ ಭಾಷಾ ವಿಶ್ಲೇಷಣೆ ಪೂರ್ಣಗೊಂಡಿದೆ!", "success");
     } catch (error) {
       const message = error.message || "Regional analysis failed. Please try again.";
-      setRequestError(message);
+      setRequestErrorState({
+        documentName,
+        documentText: extractedText,
+        inputText,
+        message,
+      });
       showToast("ಪ್ರಾದೇಶಿಕ ವಿಶ್ಲೇಷಣೆ ವಿಫಲವಾಗಿದೆ", "error");
     } finally {
       setLoading(false);
@@ -103,6 +148,8 @@ export default function RegionalAnalysis() {
       `English: ${expression.english_meaning || "Not available"}`,
       `Verification: ${expression.verification_status || "unknown"}`,
       `Source: ${expression.source || "Not available"}`,
+      `Standard Kannada source: ${expression.standard_kannada_source || "unavailable"}`,
+      `English meaning source: ${expression.english_meaning_source || "unavailable"}`,
     ].join("\n");
 
     try {
@@ -119,7 +166,10 @@ export default function RegionalAnalysis() {
   const candidateRegions = analysisResult
     ? getCandidateRegions(analysisResult)
     : [];
-  const matchedExpressions = analysisResult?.matched_expressions || [];
+  const matchedExpressions = Array.isArray(analysisResult?.matched_expressions)
+    ? analysisResult.matched_expressions.filter(Boolean)
+    : [];
+  const identifiedVariety = analysisResult?.identified_variety;
 
   return (
     <div className="regional-container">
@@ -250,9 +300,24 @@ export default function RegionalAnalysis() {
 
       {analysisResult && (
         <section className="regional-results" aria-live="polite">
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            <span className="badge badge-primary">
+              Language: {analysisResult.detected_language || "Unavailable"}
+            </span>
+            <span className="badge badge-primary">
+              Identified variety:{" "}
+              {identifiedVariety === "unknown"
+                ? "Unknown"
+                : REGION_LABELS[identifiedVariety] || identifiedVariety || "Unavailable"}
+            </span>
+            <span className="badge badge-gold">
+              Confidence: {analysisResult.confidence || "Unavailable"}
+            </span>
+          </div>
+
           <div className="regional-explanation">
             <h4>ವಿಶ್ಲೇಷಣೆಯ ವಿವರಣೆ (Explanation)</h4>
-            <p>{analysisResult.explanation || "No explanation was provided."}</p>
+            <p>{analysisResult.explanation || "Explanation unavailable."}</p>
           </div>
 
           <div className="regional-candidate-section">
@@ -324,9 +389,19 @@ export default function RegionalAnalysis() {
                   </div>
 
                   <div className="regional-expression-details">
+                    <div className="regional-detail-box regional-standard">
+                      <span>Standard Kannada</span>
+                      <strong>{expression.standard_kannada || "Not available"}</strong>
+                      {expression.standard_kannada_source && (
+                        <small>Source: {expression.standard_kannada_source}</small>
+                      )}
+                    </div>
                     <div className="regional-detail-box regional-english">
                       <span>English meaning</span>
                       <strong>{expression.english_meaning || "Not available"}</strong>
+                      {expression.english_meaning_source && (
+                        <small>Source: {expression.english_meaning_source}</small>
+                      )}
                     </div>
                   </div>
 

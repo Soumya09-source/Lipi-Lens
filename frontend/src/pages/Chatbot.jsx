@@ -19,7 +19,7 @@ export default function ChatbotPage() {
           <span>
             {extractedText
               ? `ಸಕ್ರಿಯ ದಾಖಲೆ: ${documentName || "ಕನ್ನಡ ದಾಖಲೆ"} • ಈ ದಾಖಲೆಯ ಆಧಾರದ ಮೇಲೆ ಪ್ರಶ್ನೆಗಳಿಗೆ ಉತ್ತರಿಸಲಾಗುತ್ತದೆ.`
-              : "ಯಾವುದೇ ದಾಖಲೆ ಲೋಡ್ ಆಗಿಲ್ಲ. ಸಾಮಾನ್ಯ ಕನ್ನಡ ಸಹಾಯಕ ಮೋಡ್‌ನಲ್ಲಿದೆ."}
+              : "ದಾಖಲೆ ಆಧಾರಿತ ಚಾಟ್ ಪ್ರಾರಂಭಿಸಲು ಮೊದಲು ಕನ್ನಡ ದಾಖಲೆಯನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ."}
           </span>
         </div>
         <div className="context-document-actions">

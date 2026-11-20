@@ -10,6 +10,7 @@ import {
   FileText
 } from "lucide-react";
 import { useDocument } from "../context/DocumentContext";
+import SpeechPlayer from "./SpeechPlayer";
 
 export default function ExtractedText({ isExtracting }) {
   const { extractedText, setExtractedText, setTranslatedText, showToast } = useDocument();
@@ -90,6 +91,15 @@ export default function ExtractedText({ isExtracting }) {
           lineHeight: 1.8
         }}
       />
+
+      <div className="extracted-speech-actions">
+        <SpeechPlayer
+          text={extractedText}
+          language="kn"
+          listenLabel="ಕನ್ನಡ ಆಲಿಸಿ (Listen to Kannada)"
+          buttonVariant="primary"
+        />
+      </div>
 
       {/* Quick Intelligence Action Buttons */}
       <div className="workspace-actions">
