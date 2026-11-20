@@ -5,14 +5,15 @@ import {
   Copy,
   Check,
   History,
-  Loader2
+  Loader2,
+  Sparkles
 } from "lucide-react";
 import DashboardLayout from "../components/DashboardLayout";
 import { useDocument } from "../context/DocumentContext";
 import { generateVocabulary } from "../services/api";
 
 export default function Vocabulary() {
-  const { showToast, extractedText, translatedText, documentName } = useDocument();
+  const { showToast, extractedText, documentName } = useDocument();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchHistory, setSearchHistory] = useState([]);
   const [copiedWord, setCopiedWord] = useState(null);
@@ -20,9 +21,12 @@ export default function Vocabulary() {
   const [vocabularyResult, setVocabularyResult] = useState(null);
   const [errorResult, setErrorResult] = useState(null);
 
-  const vocabulary = vocabularyResult?.sourceText === extractedText
-    ? vocabularyResult.entries
-    : [];
+  const currentResult = vocabularyResult?.sourceText === extractedText
+    ? vocabularyResult
+    : null;
+  const vocabulary = currentResult?.entries || [];
+  const vocabularySource = currentResult?.source || null;
+  const hasGeneratedVocabulary = Boolean(currentResult);
   const error = errorResult?.sourceText === extractedText
     ? errorResult.message
     : "";
@@ -42,7 +46,7 @@ export default function Vocabulary() {
     setLoading(true);
 
     try {
-      const result = await generateVocabulary(sourceText, translatedText || "");
+      const result = await generateVocabulary(sourceText);
       if (!result.success) {
         setErrorResult({
           sourceText,
@@ -53,14 +57,13 @@ export default function Vocabulary() {
 
       setVocabularyResult({
         sourceText,
-        entries: result.vocabulary
+        entries: result.vocabulary,
+        source: result.vocabularySource,
+        message: result.message
       });
 
       if (result.vocabulary.length === 0) {
-        setErrorResult({
-          sourceText,
-          message: "No vocabulary entries were returned for this document."
-        });
+        showToast("No vocabulary entries were found in this document.", "info");
       } else {
         showToast("Vocabulary generated from the current document.", "success");
       }
@@ -85,11 +88,11 @@ export default function Vocabulary() {
   const handleCopyWord = async (item) => {
     const text = [
       item.word,
-      `English meaning: ${item.english_meaning || ""}`,
-      `Kannada explanation: ${item.kannada_explanation || ""}`,
-      `Example: ${item.example_kannada || ""}`,
-      `Example translation: ${item.example_english || ""}`
-    ].join("\n");
+      item.english_meaning && `English meaning: ${item.english_meaning}`,
+      item.kannada_explanation && `Kannada explanation: ${item.kannada_explanation}`,
+      item.example_kannada && `Example: ${item.example_kannada}`,
+      item.example_english && `Example translation: ${item.example_english}`
+    ].filter(Boolean).join("\n");
 
     await navigator.clipboard.writeText(text);
     setCopiedWord(item.word);
@@ -185,13 +188,30 @@ export default function Vocabulary() {
         </div>
       )}
 
+      {currentResult && !error && (
+        <div
+          role="status"
+          style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 16 }}
+        >
+          <span className={`badge ${vocabularySource === "gemini" ? "badge-primary" : "badge-gold"}`}>
+            {vocabularySource === "gemini" ? <Sparkles size={13} /> : <BookOpen size={13} />}
+            {vocabularySource === "gemini" ? "AI-generated" : "Offline dictionary"}
+          </span>
+          {currentResult.message && (
+            <span style={{ fontSize: 13, color: "var(--color-text-secondary)" }}>
+              {currentResult.message}
+            </span>
+          )}
+        </div>
+      )}
+
       <div className="vocab-cards-grid">
         {filteredWords.map((item, index) => (
           <div key={`${item.word || "word"}-${index}`} className="vocab-card">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
               <div>
                 <h3 className="vocab-word-title kannada-text">{item.word}</h3>
-                <span className="vocab-english">{item.english_meaning}</span>
+                <span className="vocab-english">{item.english_meaning || "Meaning unavailable."}</span>
               </div>
               <button
                 type="button"
@@ -205,25 +225,32 @@ export default function Vocabulary() {
 
             <div className="vocab-definition kannada-text">
               <strong>Kannada explanation:</strong>
-              <div>{item.kannada_explanation}</div>
+              <div>{item.kannada_explanation || "ಕನ್ನಡ ವಿವರಣೆ ಲಭ್ಯವಿಲ್ಲ."}</div>
             </div>
 
             <div className="vocab-example kannada-text">
-              <strong>Example:</strong>
-              <div>{item.example_kannada}</div>
+              <strong>Kannada example:</strong>
+              <div>{item.example_kannada || "ಉದಾಹರಣೆ ವಾಕ್ಯ ಲಭ್ಯವಿಲ್ಲ."}</div>
             </div>
 
             <div style={{ fontSize: 13, color: "var(--color-text-secondary)", lineHeight: 1.5 }}>
               <strong>Example translation:</strong>
-              <div>{item.example_english}</div>
+              <div>{item.example_english || "English example translation unavailable."}</div>
             </div>
           </div>
         ))}
 
-        {!loading && !error && vocabulary.length === 0 && (
+        {!loading && !error && vocabulary.length === 0 && !hasGeneratedVocabulary && (
           <div className="card" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "32px 24px" }}>
             <BookOpen size={32} color="var(--color-primary)" style={{ margin: "0 auto 12px" }} />
             <p>{extractedText ? "Generate vocabulary to see words from this document." : "No document text is available yet."}</p>
+          </div>
+        )}
+
+        {!loading && !error && vocabulary.length === 0 && hasGeneratedVocabulary && (
+          <div className="card" style={{ gridColumn: "1 / -1", textAlign: "center", padding: "32px 24px" }}>
+            <BookOpen size={32} color="var(--color-primary)" style={{ margin: "0 auto 12px" }} />
+            <p>No vocabulary entries were found in this document.</p>
           </div>
         )}
 

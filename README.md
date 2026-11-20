@@ -1,132 +1,160 @@
-# Lipi-Lens
-AI-powered Kannada OCR, translation and speech application
+# Lipi Lens
 
-## Run on macOS
+Lipi Lens is a Kannada document and language application. The root-level
+`backend/` and `frontend/` directories are the application sources. Regional
+Kannada intelligence runs as a separate service in `regional-backend/`.
 
-### Backend prerequisites
+The legacy `lipi-lens/` directory is not used by the startup commands below.
+Its remaining local configuration, environment, and test artifacts have been
+preserved.
 
-Install Tesseract and ensure its Kannada and English language data are available:
+## Requirements
 
-```bash
-brew install tesseract tesseract-lang
-tesseract --list-langs
+- Python 3.10 or later and Node.js/npm.
+- Tesseract OCR with both Kannada (`kan`) and English (`eng`) language data for
+  image/PDF OCR. Configure `TESSERACT_CMD` if Tesseract is not on `PATH`.
+- `backend/requirements.txt` provides `IndicTransToolkit`, `transformers`, and
+  `torch` for IndicTrans2 Kannada-to-English translation. The
+  `ai4bharat/indictrans2-indic-en-dist-200M` model is gated and requires approved
+  Hugging Face access and authentication via `HF_TOKEN`.
+- `google-genai` and `GEMINI_API_KEY` are used by the summary, chatbot, and
+  vocabulary services; Gemini is not the translation engine. Because the
+  combined Flask app imports these services at startup, configure
+  `GEMINI_API_KEY` before starting `ubuntu_app.py`, including when using its
+  translation endpoint.
+- Mithi model code, weights, and its runtime dependencies for Kannada
+  text-to-speech. The Python dependencies in `backend/requirements.txt` do not
+  include the external `run.Mithi` implementation or its model files.
+
+Create a new backend environment without changing the existing root `venv/`:
+
+```powershell
+py -m venv backend\.venv
+.\backend\.venv\Scripts\Activate.ps1
+python -m pip install -r backend\requirements.txt
 ```
 
-The language list must include `kan` and `eng`. If Tesseract is installed outside
-`PATH`, set `TESSERACT_CMD` to its executable path before starting the OCR server.
+In PowerShell, if script activation is unavailable, use the environment's
+Python directly, for example `backend\.venv\Scripts\python.exe`.
 
-Create a Python environment and install the backend packages:
+## Start the backend services
 
-```bash
-cd backend
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-```
+Run each service in a separate terminal. Activate `backend\.venv` in each
+terminal, then start the corresponding process from the `backend/` directory:
 
-### Start the APIs
-
-Run each command in a separate terminal from the repository root:
-
-```bash
-cd backend
-source .venv/bin/activate
+```powershell
+Set-Location backend
 python app.py
 ```
 
-The OCR API listens on `http://127.0.0.1:5001` and accepts multipart requests at
-`/api/ocr`, with the uploaded image (or PDF) in the `image` field.
+This starts the OCR Flask API on port `5001`.
 
-```bash
-cd backend
-source .venv/bin/activate
+```powershell
+Set-Location backend
 python ubuntu_app.py
 ```
 
-The Kannada-to-English translation API listens on `http://127.0.0.1:5000` and
-accepts JSON requests at `/api/translate`. The IndicTrans2 model is downloaded
-when the first translation request arrives. Its Hugging Face model repository
-is gated: request access to `ai4bharat/indictrans2-indic-en-dist-200M` and
-authenticate with an authorized Hugging Face account before translating. To
-provide a token without putting it in shell history:
+This starts the translation, summary, vocabulary, and chatbot Flask API on
+port `5000`. Summary, chatbot, and vocabulary use Gemini; their shared service
+requires `GEMINI_API_KEY` at startup. Translation uses IndicTrans2 and loads
+the gated Hugging Face model on the first request. Set `HF_TOKEN` using an
+authorized Hugging Face account with access to
+`ai4bharat/indictrans2-indic-en-dist-200M`.
 
-```bash
-read -s -p "Hugging Face token: " HF_TOKEN; echo; export HF_TOKEN
-```
-
-The OCR API can run without this model access; translation requests return an
-error until access is granted and authentication is configured.
-
-The same Ubuntu API also provides `/api/summary`, `/api/vocabulary`, and
-`/api/chat`. Set `GEMINI_API_KEY` in the backend process environment to use
-these Gemini-powered endpoints.
-
-Mithi text-to-speech is served by its separate Flask application:
-
-```bash
-cd backend
-source .venv/bin/activate
+```powershell
+Set-Location backend
 python mithi_app.py
 ```
 
-It listens on port `5002`, exposes `POST /api/speech`, and requires the Mithi
-model code and weights at the configured model location. It can run alongside
-`ubuntu_app.py`, which listens on port `5000`.
+This starts the Mithi speech Flask API on port `5002`. The current service
+expects Mithi model code and weights at
+`/mnt/d/LipiLensModels/mithi-v2-flash`, as configured in
+`backend/services/speech_service.py`. The model is not included in this
+repository. Startup depends on that external model and its runtime
+dependencies.
 
-### Start the frontend
+`backend/windows_ocr_app.py` is an alternate launcher for the OCR app on port
+`5001`; it is not a separate API.
 
-```bash
-cd frontend
+## Start regional Kannada intelligence
+
+The regional service and its corpus are in `regional-backend/`. From the
+repository root, create a separate environment and install its dependencies:
+
+```powershell
+py -m venv regional-backend\.venv
+.\regional-backend\.venv\Scripts\Activate.ps1
+python -m pip install -r regional-backend\requirements.txt
+Set-Location regional-backend
+python -m uvicorn main:app --host 127.0.0.1 --port 8001
+```
+
+The health endpoint is `GET /health`; regional analysis is
+`POST /api/regional/analyse`. The regional service reads `CORS_ORIGINS` for
+allowed browser origins (defaulting to localhost ports 3000 and 5173).
+`REGIONAL_TRANSLATION_API_URL` can override its local translation fallback;
+the default is `http://127.0.0.1:5000/api/translate`. Optional Gemini
+explanations and Standard Kannada enrichment use `GEMINI_API_KEY` and
+`GEMINI_MODEL` (default `gemini-2.0-flash`). Without a configured Gemini key,
+rule-based explanations are returned and Gemini enrichment is unavailable.
+
+## Start the frontend
+
+In a separate terminal:
+
+```powershell
+Set-Location frontend
 npm install
 npm run dev
 ```
 
-By default, the frontend connects to the local API ports above. Set
-`VITE_OCR_API_URL`, `VITE_TRANSLATION_API_URL`, `VITE_UBUNTU_API_URL`, or
-`VITE_SPEECH_API_URL` if an API runs at a different base URL; each value should
-include the `/api` path.
+Vite prints the local development URL (normally `http://localhost:5173`).
+Frontend service base URLs can be overridden with these Vite environment
+variables; each change requires restarting Vite:
 
-### Regional Kannada analysis
+| Variable | Default |
+| --- | --- |
+| `VITE_API_URL` | `http://localhost:8000/api` |
+| `VITE_OCR_API_URL` | `http://127.0.0.1:5001/api` |
+| `VITE_UBUNTU_API_URL` | `http://127.0.0.1:5000/api` |
+| `VITE_TRANSLATION_API_URL` | The Ubuntu API URL |
+| `VITE_SPEECH_API_URL` | `http://127.0.0.1:5002/api` |
+| `VITE_REGIONAL_API_URL` | `http://localhost:8001` |
 
-The Regional Kannada Intelligence API runs independently on port 8001:
+`frontend/.env.example` contains the regional API URL example. Do not put
+secrets in frontend variables; Vite exposes `VITE_*` values to browser code.
+`VITE_API_URL` is used by the frontend simplifier, but no matching backend
+route is currently implemented.
 
-```bash
-cd regional-backend
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python -m uvicorn main:app --host 127.0.0.1 --port 8001
-```
+## API map and current limitations
 
-In `frontend/.env`, set `VITE_REGIONAL_API_URL=http://localhost:8001` and
-restart Vite after changing the value. The frontend calls
-`POST /api/regional/analyse`; the regional backend's default CORS configuration
-allows the local Vite origin at `http://localhost:5173`. If using another
-frontend origin, add it to the regional backend's comma-separated
-`CORS_ORIGINS` setting.
+| Feature | Endpoint | Service |
+| --- | --- | --- |
+| Kannada OCR (image/PDF) | `POST /api/ocr` | Flask, port 5001 |
+| Kannada to English translation | `POST /api/translate` | Flask, port 5000 |
+| Smart summary | `POST /api/summary` | Flask, port 5000 |
+| Vocabulary | `POST /api/vocabulary` | Flask, port 5000 |
+| Document chatbot | `POST /api/chat` | Flask, port 5000 |
+| Kannada speech | `POST /api/speech` | Flask/Mithi, port 5002 |
+| Regional Kannada analysis | `POST /api/regional/analyse` | FastAPI, port 8001 |
 
-Regional matching checks vocabulary, complete sentence, and paragraph records
-with Unicode-normalized, punctuation-insensitive matching. Responses identify
-the dataset type and source. Unverified or shared evidence remains candidate-only;
-unmatched text is not classified as Standard Kannada.
+The translation API currently supports Kannada-to-English only; English-to-
+Kannada translation is not implemented. There is no backend `/api/simplify`
+route, although the frontend currently calls one and can display demo fallback
+content when it is unavailable. Summary and chatbot frontend helpers also have
+demo fallbacks. Kannada speech uses Mithi when available; English speech uses
+the browser's speech synthesis fallback. Vocabulary and regional analysis
+provide meaning fields; there is no separate meaning endpoint.
 
-Matched expressions retain dataset-provided meanings. When a complete matched
-expression has no meaning in the dataset, the regional API uses the local
-translation endpoint at `http://127.0.0.1:5000/api/translate` for English and
-the configured Gemini service for a Standard Kannada rendering. Override the
-translation endpoint with `REGIONAL_TRANSLATION_API_URL`; generated and
-dataset-provided values carry separate provenance fields in the API response.
-If a generator is unavailable or fails, the corresponding value and provenance
-are reported as unavailable.
+These are implementation notes, not a claim that the services have been
+started or end-to-end tested in every environment. The required OCR language
+data, model access, API credentials, and external Mithi files must be available
+for their corresponding features.
 
-### API smoke tests
+## Tests
 
-```bash
-curl -F "image=@/path/to/kannada-document.jpg" http://127.0.0.1:5001/api/ocr
-curl -H "Content-Type: application/json" \
-  -d '{"kannada_text":"ನಮಸ್ಕಾರ"}' \
-  http://127.0.0.1:5000/api/translate
-curl -H "Content-Type: application/json" \
-  -d '{"text":"ನಮಸ್ಕಾರ"}' \
-  http://localhost:8001/api/regional/analyse
-```
+Backend tests and test utilities are under `backend/tests/` and `backend/`.
+`backend/tests/test_mithi.py` is a manual Mithi test moved from the legacy
+directory. Tests requiring downloaded models, credentials, OCR language data,
+or Mithi hardware/model files need those prerequisites configured before they
+can run.

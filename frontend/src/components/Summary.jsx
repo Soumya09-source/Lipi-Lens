@@ -12,52 +12,21 @@ import {
   Languages
 } from "lucide-react";
 import { useDocument } from "../context/DocumentContext";
-
-/**
- * Extracts Kannada and English summary objects from the shared state.
- * Supports { kn: {...}, en: {...} }, { overview_en: ... }, or single-language payloads.
- */
-function resolveSummaryData(rawSummary) {
-  if (!rawSummary) return { kn: null, en: null };
-
-  // 1. Kannada Data
-  let kn = rawSummary.kn || rawSummary.kannada;
-  if (!kn && (rawSummary.overview || rawSummary.importantPoints)) {
-    kn = {
-      overview: rawSummary.overview || "",
-      importantPoints: rawSummary.importantPoints || [],
-      datesAndDeadlines: rawSummary.datesAndDeadlines || [],
-      amountsAndNumbers: rawSummary.amountsAndNumbers || [],
-      namesAndOrganizations: rawSummary.namesAndOrganizations || [],
-      importantInstructions: rawSummary.importantInstructions || []
-    };
-  }
-
-  // 2. English Data
-  let en = rawSummary.en || rawSummary.english;
-  if (!en && (rawSummary.overview_en || rawSummary.overviewEn)) {
-    en = {
-      overview: rawSummary.overview_en || rawSummary.overviewEn || "",
-      importantPoints: rawSummary.importantPoints_en || rawSummary.importantPointsEn || [],
-      datesAndDeadlines: rawSummary.datesAndDeadlines_en || rawSummary.datesAndDeadlinesEn || [],
-      amountsAndNumbers: rawSummary.amountsAndNumbers_en || rawSummary.amountsAndNumbersEn || [],
-      namesAndOrganizations: rawSummary.namesAndOrganizations_en || rawSummary.namesAndOrganizationsEn || [],
-      importantInstructions: rawSummary.importantInstructions_en || rawSummary.importantInstructionsEn || []
-    };
-  }
-
-  return { kn, en };
-}
+import {
+  hasSummaryContent,
+  mapSummaryResponse,
+} from "../services/summaryMapping.js";
 
 export default function SummaryComponent({ isGenerating, onGenerate }) {
   const { summary, extractedText, showToast } = useDocument();
   const [copied, setCopied] = useState(false);
   const [languageMode, setLanguageMode] = useState("kn"); // "kn" | "en" | "both"
 
-  const { kn, en } = resolveSummaryData(summary);
+  const summaryData = mapSummaryResponse(summary);
+  const { kn, en, keyPoints = [], importantDetails = [] } = summaryData || {};
 
   const handleCopySummary = async () => {
-    if (!summary) return;
+    if (!summaryData || !hasSummaryContent(summaryData)) return;
 
     try {
       let textToCopy = "";
@@ -102,7 +71,7 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
         showToast("Summary copied to clipboard (English)", "success");
       } else if (languageMode === "both" && kn && en) {
         textToCopy = `[Lipi Lens - Bilingual Smart Summary / ದ್ವಿಭಾಷಾ ಸಾರಾಂಶ]\n\n`;
-        textToCopy += `=== 1. DOCUMENT OVERVIEW / ದಾಖಲೆಯ ಅವಲೋಕನ ===\n[ಕನ್ನಡ]: ${kn.overview}\n[English]: ${en.overview}\n\n`;
+        textToCopy += `=== 1. DOCUMENT OVERVIEW / ದಾಖಲೆಯ ಅವಲೋಕನ ===\n[ಕನ್ನಡ]: ${kn.overview || ""}\n[English]: ${en.overview || ""}\n\n`;
         if (kn.importantPoints?.length) {
           textToCopy += `=== 2. IMPORTANT POINTS / ಮುಖ್ಯ ಅಂಶಗಳು ===\n`;
           kn.importantPoints.forEach((p, idx) => {
@@ -127,6 +96,14 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
         showToast("ದ್ವಿಭಾಷಾ ಸಾರಾಂಶವನ್ನು ನಕಲಿಸಲಾಗಿದೆ (Bilingual summary copied)", "success");
       }
 
+      if (keyPoints.length) {
+        textToCopy += `\nKey points:\n${keyPoints.map((point, index) => `${index + 1}. ${point}`).join("\n")}\n`;
+      }
+      if (importantDetails.length) {
+        textToCopy += `\nImportant details:\n${importantDetails.map((detail) => `• ${detail}`).join("\n")}\n`;
+      }
+
+      if (!textToCopy.trim()) return;
       await navigator.clipboard.writeText(textToCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -135,7 +112,7 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
     }
   };
 
-  if (!summary) {
+  if (!summary || !hasSummaryContent(summaryData)) {
     return (
       <div
         className="card"
@@ -152,9 +129,15 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
         >
           <Sparkles size={32} />
         </div>
-        <h3 style={{ fontSize: 20, marginBottom: 8 }}>ಯಾವುದೇ ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿಲ್ಲ (No Summary Generated)</h3>
+        <h3 style={{ fontSize: 20, marginBottom: 8 }}>
+          {summary
+            ? "ಸಾರಾಂಶ ವಿಷಯ ಲಭ್ಯವಿಲ್ಲ (Summary Content Unavailable)"
+            : "ಯಾವುದೇ ಸಾರಾಂಶ ಸಿದ್ಧವಾಗಿಲ್ಲ (No Summary Generated)"}
+        </h3>
         <p style={{ maxWidth: 500, margin: "0 auto 20px", fontSize: 14 }}>
-          {extractedText
+          {summary
+            ? "The summary service returned no usable summary content. Try generating it again."
+            : extractedText
             ? "ದಾಖಲೆಯಿಂದ ಹೊರತೆಗೆದ ಪಠ್ಯ ಸಿದ್ಧವಿದೆ. ಬುದ್ಧಿವಂತ ಸಾರಾಂಶವನ್ನು ಪಡೆಯಲು ಕೆಳಗಿನ ಬಟನ್ ಕ್ಲಿಕ್ ಮಾಡಿ."
             : "ದಯವಿಟ್ಟು ಮೊದಲು 'ದಾಖಲೆ (Document Workspace)' ವಿಭಾಗದಲ್ಲಿ ಕನ್ನಡ ಕಡತವನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ."}
         </p>
@@ -194,7 +177,16 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span className="badge badge-primary">AI Analyzed</span>
+          {summaryData.summarySource && (
+            <span
+              className={`badge ${summaryData.summarySource === "gemini" ? "badge-primary" : "badge-gold"}`}
+            >
+              {summaryData.summarySource === "gemini" && <Sparkles size={13} />}
+              {summaryData.summarySource === "gemini"
+                ? "AI-generated · Gemini"
+                : "Offline fallback"}
+            </span>
+          )}
 
           {/* Bilingual Language Toggle: ಕನ್ನಡ | English | Both */}
           <div className="summary-language-toggle">
@@ -296,7 +288,7 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
             {/* Mode: Kannada Only */}
             {languageMode === "kn" && (
               <p className="kannada-text" style={{ fontSize: 15, lineHeight: 1.8, color: "var(--color-text-main)" }}>
-                {kn?.overview}
+                {kn?.overview || "ಕನ್ನಡ ಸಾರಾಂಶ ಲಭ್ಯವಿಲ್ಲ."}
               </p>
             )}
 
@@ -313,7 +305,7 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
                 <div style={{ marginBottom: hasEnglish ? 12 : 0 }}>
                   {hasEnglish && <span className="bilingual-tag bilingual-tag-kn">ಕನ್ನಡ</span>}
                   <p className="kannada-text" style={{ fontSize: 15, lineHeight: 1.8, color: "var(--color-text-main)" }}>
-                    {kn?.overview}
+                    {kn?.overview || "ಕನ್ನಡ ಸಾರಾಂಶ ಲಭ್ಯವಿಲ್ಲ."}
                   </p>
                 </div>
 
@@ -334,6 +326,52 @@ export default function SummaryComponent({ isGenerating, onGenerate }) {
 
           {/* Structured Sections Grid */}
           <div className="summary-sections-grid">
+            {keyPoints.length > 0 && (
+              <div className="summary-section-card" style={{ gridColumn: "span 2" }}>
+                <div className="card-header">
+                  <div className="card-title">
+                    <div className="section-icon-badge" style={{ backgroundColor: "#E8F7EE", color: "#1B8354" }}>
+                      <CheckCircle2 size={18} />
+                    </div>
+                    <span>{getSectionTitle("ಮುಖ್ಯ ಅಂಶಗಳು (Key Points)", "Key Points")}</span>
+                  </div>
+                </div>
+                <ul className="summary-list">
+                  {keyPoints.map((point, index) => (
+                    <li key={index} className="summary-list-item">
+                      <span className="summary-bullet" />
+                      <span style={{ color: "var(--color-text-main)", lineHeight: 1.6 }}>
+                        {point}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {importantDetails.length > 0 && (
+              <div className="summary-section-card" style={{ gridColumn: "span 2" }}>
+                <div className="card-header">
+                  <div className="card-title">
+                    <div className="section-icon-badge" style={{ backgroundColor: "#FFF5D6", color: "#8C6500" }}>
+                      <AlertCircle size={18} />
+                    </div>
+                    <span>{getSectionTitle("ಪ್ರಮುಖ ವಿವರಗಳು (Important Details)", "Important Details")}</span>
+                  </div>
+                </div>
+                <ul className="summary-list">
+                  {importantDetails.map((detail, index) => (
+                    <li key={index} className="summary-list-item">
+                      <span className="summary-bullet" />
+                      <span style={{ color: "var(--color-text-main)", lineHeight: 1.6 }}>
+                        {detail}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {/* 2. Important Points */}
             {kn?.importantPoints && kn.importantPoints.length > 0 && (
               <div className="summary-section-card" style={{ gridColumn: "span 2" }}>
