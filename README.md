@@ -511,7 +511,22 @@ The speech backend runs on:
 http://127.0.0.1:5002
 ```
 
-### Terminal 4: Frontend
+### Terminal 4: Regional Backend
+
+```bash
+cd regional-backend
+uvicorn main:app --host 0.0.0.0 --port 8001
+```
+
+The regional backend runs on:
+
+```text
+http://127.0.0.1:8001
+```
+
+Make sure the regional backend's configured Python environment and dependencies are activated before starting the service.
+
+### Terminal 5: Frontend
 
 ```bash
 cd frontend
@@ -524,9 +539,7 @@ Open the local development URL displayed by Vite, typically:
 http://localhost:5173
 ```
 
-The exact OCR and regional backend startup commands depend on their configured application entry points.
-
----
+All five services should be running in separate terminals for the complete application functionality.
 
 ## 11. Environment Configuration
 
